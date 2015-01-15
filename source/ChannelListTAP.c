@@ -8,26 +8,17 @@
 #include                <string.h>
 #include                <stdio.h>
 #include                <stdlib.h>
-#include                "tap.h"
-#include                "libFireBird.h"
-#include                "../../../../../../Topfield/FireBirdLib/flash/FBLib_flash.h"
+#include                <tap.h>
+#include                <libFireBird.h>
+#include                "../../../../../Topfield/FireBirdLib/flash/FBLib_flash.h"
+#include                "ChannelListTAP.h"
 
-#define PROGRAM_NAME    "ChannelListTAP"
-#define VERSION         "V0.2"
-
-TAP_ID                  (0x8E0A4271);
+TAP_ID                  (TAPID);
 TAP_PROGRAM_NAME        (PROGRAM_NAME" "VERSION);
-TAP_AUTHOR_NAME         ("chris86");
-TAP_DESCRIPTION         ("Import/Export of Sat, Transponder, Service, Favorites lists");
+TAP_PROGRAM_VERSION     (VERSION);
+TAP_AUTHOR_NAME         (AUTHOR);
+TAP_DESCRIPTION         (DESCRIPTION);
 TAP_ETCINFO             (__DATE__);
-
-#define EXPORTFILENAME   "ProgramFiles/Channels"
-#define CRLF             "\r\n"
-
-
-#define PROVIDERNAMELENGTH  21
-#define NRPROVIDERNAMES     256
-#define SERVICENAMESLENGTH  39996    // 40000 / 40004 / 39996 ***  ?
 
 
 #define SYSTYPE 7
@@ -45,6 +36,14 @@ TAP_ETCINFO             (__DATE__);
   typedef TYPE_Service_TMST             TYPE_Service_TMSx;
 #endif
 
+
+
+// ============================================================================
+//                              IMPLEMENTIERUNG
+// ============================================================================
+  
+bool                         CSShowMessageBox = FALSE;
+dword                        LastMessageBoxKey;
 
 SYSTEM_TYPE                  CurSystemType;
 int                          NrFavGroups = 0;
@@ -102,7 +101,6 @@ bool InitSystemType(void)
       ret = FALSE;
       break;
   }
-
   return ret;
 }
 
@@ -560,12 +558,14 @@ typedef struct
 
 
 
-char* ByteArrToStr(char *outStr, byte *inArr, int length)
+char* ByteArrToStr(char *outStr, byte inArr[], int length)
 {
   int i;
+
+  if (outStr)
+    outStr[0] = '\0';
   if (outStr && inArr)
   {
-    outStr[0] = '\0';
     for (i = 0; i < length; i++)
       sprintf(&outStr[3*i], "%02.2X ", inArr[i]);
     if (outStr[0])
@@ -573,32 +573,88 @@ char* ByteArrToStr(char *outStr, byte *inArr, int length)
   }
   return outStr;
 }
+bool StrToByteArr(byte *outArr, char *inStr, int length)
+{
+  char *p;
+  int   i;
+
+  if (outArr)
+  {
+    memset(outArr, 0, length);
+    p = strtok(inStr, " ");
+    i = 0;
+    while (p)
+    {
+      if (i < length)
+      {
+        outArr[i] = strtol(p, NULL, 16);
+        p = strtok(NULL, " ");
+        i++;
+      }
+      else
+        return FALSE;
+    }
+    return TRUE;
+  }
+  else
+    return FALSE;
+}
 
 char BoolToChar(bool inValue)
 {
   return (inValue ? 'y' : 'n');
 }
+bool CharToBool(char inValue)
+{
+  return ((inValue == 'y') || (inValue == 'Y'));
+}
 
 char* FECtoStr(char *outStr, byte inFEC)
 {
-  switch (inFEC)
+  if (CurSystemType == ST_TMSS)
+    switch (inFEC)
+    {
+      case FEC_AUTO:                   return "auto";
+      case FEC_1_2:                    return "1/2";
+      case FEC_2_3:                    return "2/3";
+      case FEC_3_4:                    return "3/4";
+      case FEC_5_6:                    return "5/6";
+      case FEC_7_8:                    return "7/8";
+      case FEC_8_9:                    return "8/9";
+      case FEC_3_5:                    return "3/5";
+      case FEC_4_5:                    return "4/5";
+      case FEC_9_10:                   return "9/10";
+      case FEC_RESERVED:               return "reserved";
+      case FEC_NO_CONV:                return "none";
+    }
+  sprintf(outStr, "%#3x", inFEC);
+  return outStr;
+}
+byte StrToFEC(char *inStr)
+{
+  if (strcmp(inStr, "auto")     == 0)  return FEC_AUTO;
+  if (strcmp(inStr, "1/2")      == 0)  return FEC_1_2;
+  if (strcmp(inStr, "2/3")      == 0)  return FEC_2_3;
+  if (strcmp(inStr, "3/4")      == 0)  return FEC_3_4;
+  if (strcmp(inStr, "5/6")      == 0)  return FEC_5_6;
+  if (strcmp(inStr, "7/8")      == 0)  return FEC_7_8;
+  if (strcmp(inStr, "8/9")      == 0)  return FEC_8_9;
+  if (strcmp(inStr, "3/5")      == 0)  return FEC_3_5;
+  if (strcmp(inStr, "4/5")      == 0)  return FEC_4_5;
+  if (strcmp(inStr, "9/10")     == 0)  return FEC_9_10;
+  if (strcmp(inStr, "reserved") == 0)  return FEC_RESERVED;
+  if (strcmp(inStr, "none")     == 0)  return FEC_NO_CONV;
+
+  long ret = strtol(inStr, NULL, 0);
+  if (ret <= 0xF)
   {
-    case FEC_AUTO:           return "auto";
-    case FEC_1_2:            return "1/2";
-    case FEC_2_3:            return "2/3";
-    case FEC_3_4:            return "3/4";
-    case FEC_5_6:            return "5/6";
-    case FEC_7_8:            return "7/8";
-    case FEC_8_9:            return "8/9";
-    case FEC_3_5:            return "3/5";
-    case FEC_4_5:            return "4/5";
-    case FEC_9_10:           return "9/10";
-    case FEC_RESERVED:       return "reserved";
-    case FEC_NO_CONV:        return "none";
-    default:
-      sprintf(outStr, "%#3x", inFEC);
-      return outStr;
+    if (ret == 0)
+      TAP_PrintNet("Warning: Suspekter FEC-String: '%s'\n", inStr);
+    return ret;
   }
+  else
+    TAP_PrintNet("Error: Ungültiger FEC-String: '%s'\n", inStr);
+  return FEC_NO_CONV;
 }
 
 char* ModulationToStr(char *outStr, byte inMod)
@@ -606,22 +662,51 @@ char* ModulationToStr(char *outStr, byte inMod)
   if (CurSystemType == ST_TMSS)
     switch (inMod)
     {
-      case MODULATION_AUTO:  return "auto";
-      case MODULATION_QPSK:  return "QPSK";
-      case MODULATION_8PSK:  return "8PSK";
-      case MODULATION_16QAM: return "16QAM";
+      case MODULATION_AUTO:            return "auto";
+      case MODULATION_QPSK:            return "QPSK";
+      case MODULATION_8PSK:            return "8PSK";
+      case MODULATION_16QAM:           return "16QAM";
     }
-  else
+  else if (CurSystemType == ST_TMSC)
     switch (inMod)
     {
-      case 0x0:              return "16QAM";
-      case 0x1:              return "32QAM";
-      case 0x2:              return "64QAM";
-      case 0x3:              return "128QAM";
-      case 0x4:              return "256QAM";
+      case 0x0:                        return "16QAM";
+      case 0x1:                        return "32QAM";
+      case 0x2:                        return "64QAM";
+      case 0x3:                        return "128QAM";
+      case 0x4:                        return "256QAM";
     }
-  sprintf(outStr, "%#3x", inMod);
+  sprintf(outStr, "%#4x", inMod);
   return outStr;
+}
+byte StrToModulation(char *inStr)
+{
+  if (CurSystemType == ST_TMSS)
+  {
+    if (strcmp(inStr, "auto")   == 0)  return MODULATION_AUTO;
+    if (strcmp(inStr, "QPSK")   == 0)  return MODULATION_QPSK;
+    if (strcmp(inStr, "8PSK")   == 0)  return MODULATION_8PSK;
+    if (strcmp(inStr, "16QAM")  == 0)  return MODULATION_16QAM;
+  }
+  else if (CurSystemType == ST_TMSC)
+  {
+    if (strcmp(inStr, "16QAM")  == 0)  return 0x0;
+    if (strcmp(inStr, "32QAM")  == 0)  return 0x1;
+    if (strcmp(inStr, "64QAM")  == 0)  return 0x2;
+    if (strcmp(inStr, "128QAM") == 0)  return 0x3;
+    if (strcmp(inStr, "256QAM") == 0)  return 0x4;
+  }
+
+  long ret = strtol(inStr, NULL, 0);
+  if (ret <= ((CurSystemType == ST_TMSS) ? 3 : 0xFF))
+  {
+    if (ret == 0)
+      TAP_PrintNet("Warning: Suspekter Modulation-String: '%s'\n", inStr);
+    return ret;
+  }
+  else
+    TAP_PrintNet("Error: Ungültiger Modulation-String: '%s'\n", inStr);
+  return 0;
 }
 
 char* VideoTypeToStr(char *outStr, byte inVideo)
@@ -641,8 +726,31 @@ char* VideoTypeToStr(char *outStr, byte inVideo)
       return outStr;
   }
 }
+byte StrToVideoType(char *inStr)
+{
+  if (strcmp(inStr, "MPEG1")   == 0)   return STREAM_VIDEO_MPEG1;
+  if (strcmp(inStr, "MPEG2")   == 0)   return STREAM_VIDEO_MPEG2;
+  if (strcmp(inStr, "MPEG4.2") == 0)   return STREAM_VIDEO_MPEG4_PART2;
+  if (strcmp(inStr, "H263")    == 0)   return STREAM_VIDEO_MPEG4_H263;
+  if (strcmp(inStr, "H264")    == 0)   return STREAM_VIDEO_MPEG4_H264;
+  if (strcmp(inStr, "VC1")     == 0)   return STREAM_VIDEO_VC1;
+  if (strcmp(inStr, "VC1SM")   == 0)   return STREAM_VIDEO_VC1SM;
+  if (strcmp(inStr, "unknown") == 0)   return STREAM_UNKNOWN;
 
-char* AudioTypeToStr(char *outStr, byte inAudio)
+  long ret;
+  ret = strtol(inStr, NULL, 0);
+  if (ret <= 0xFF)
+  {
+    if (ret == 0)
+      TAP_PrintNet("Warning: Suspekter VideoType-String: '%s'\n", inStr);
+    return ret;
+  }
+  else
+    TAP_PrintNet("Error: Ungültiger VideoType-String: '%s'\n", inStr);
+  return STREAM_UNKNOWN;
+}
+
+char* AudioTypeToStr(char *outStr, word inAudio)
 {
   switch (inAudio)
   {
@@ -656,11 +764,34 @@ char* AudioTypeToStr(char *outStr, byte inAudio)
     case STREAM_AUDIO_MPEG4_DTS:       return "DTS";
     case STREAM_UNKNOWN:               return "unknown";
     default:
-      sprintf(outStr, "%#4x", inAudio);
+      sprintf(outStr, "%#6x", inAudio);
       return outStr;
   }
 }
+word StrToAudioType(char *inStr)
+{
+  if (strcmp(inStr, "MP3")     == 0)   return STREAM_AUDIO_MP3;
+  if (strcmp(inStr, "MPEG1")   == 0)   return STREAM_AUDIO_MPEG1;
+  if (strcmp(inStr, "MPEG2")   == 0)   return STREAM_AUDIO_MPEG2;
+  if (strcmp(inStr, "AC3plus") == 0)   return STREAM_AUDIO_MPEG4_AC3_PLUS;
+  if (strcmp(inStr, "AAC")     == 0)   return STREAM_AUDIO_MPEG4_AAC;
+  if (strcmp(inStr, "AACplus") == 0)   return STREAM_AUDIO_MPEG4_AAC_PLUS;
+  if (strcmp(inStr, "AC3")     == 0)   return STREAM_AUDIO_MPEG4_AC3;
+  if (strcmp(inStr, "DTS")     == 0)   return STREAM_AUDIO_MPEG4_DTS;
+  if (strcmp(inStr, "unknown") == 0)   return STREAM_UNKNOWN;
 
+  long ret;
+  ret = strtol(inStr, NULL, 0);
+  if (ret < 0xFFFF)
+  {
+    if (ret == 0)
+      TAP_PrintNet("Warning: Suspekter AudioType-String: '%s'\n", inStr);
+    return ret;
+  }
+  else
+    TAP_PrintNet("Error: Ungültiger AudioType-String: '%s'\n", inStr);
+  return STREAM_UNKNOWN;
+}
 
 bool ExportSettings_Text(void)
 {
@@ -902,6 +1033,8 @@ bool ImportSettings_Text(void)
     {
       tFlashSatTable         CurSat;
       char                   StringBuf1[100], StringBuf2[100];
+      byte                   LNBSupply[2], DiSEqC10[2], LoopThrough[2], unused1[2], unused2[2], unused3[2], unused4[2];
+      word                   UniversalLNB[2], Switch22[2], LowBand[2];
 
       for(i = 0; i < FileHeader.NrSatellites; i++)
       {
@@ -915,21 +1048,35 @@ bool ImportSettings_Text(void)
 
           // LNBxSupply; LNBxDiSEqC10; LNBxDiSEqC11; LNBxDiSeqC12; LNBxDiSEqC12Flags; LNBxUniversal; LNBxSwitch22; LNBxLowBand; LNBxHBFrq; LNBxLoop
           ret = (sscanf(Buffer, "%hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %100[^;\r\n] ; %100[^;\r\n] ;  %hi ; %hi ;  %hi ; %hi ;  %hi ; %hi ;  %hi ; %hi ;  %hhi ; %hhi ; ",
-                                 &CurSat.LNB[0].LNBSupply, &CurSat.LNB[1].LNBSupply,  &CurSat.LNB[0].DiSEqC10, &CurSat.LNB[1].DiSEqC10,  &CurSat.LNB[0].DiSEqC11, &CurSat.LNB[1].DiSEqC11,  &CurSat.LNB[0].DiSEqC12, &CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  &CurSat.LNB[0].UniversalLNB, &CurSat.LNB[1].UniversalLNB,  &CurSat.LNB[0].Switch22, &CurSat.LNB[1].Switch22,  &CurSat.LNB[0].LowBand, &CurSat.LNB[1].LowBand,  &CurSat.LNB[0].HBFrq, &CurSat.LNB[1].HBFrq,  &CurSat.LNB[0].LoopThrough, &CurSat.LNB[1].LoopThrough) > 0) && ret;
-          StrToByteArr(&CurSat.LNB[0].DiSEqC12Flags, StringBuf1, sizeof(CurSat.LNB[0].DiSEqC12Flags));
-          StrToByteArr(&CurSat.LNB[1].DiSEqC12Flags, StringBuf2, sizeof(CurSat.LNB[1].DiSEqC12Flags));
+                                 &LNBSupply[0], &LNBSupply[1],  &DiSEqC10[0], &DiSEqC10[1],  &CurSat.LNB[0].DiSEqC11, &CurSat.LNB[1].DiSEqC11,  &CurSat.LNB[0].DiSEqC12, &CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  &UniversalLNB[0], &UniversalLNB[1],  &Switch22[0], &Switch22[1],  &LowBand[0], &LowBand[1],  &CurSat.LNB[0].HBFrq, &CurSat.LNB[1].HBFrq,  &LoopThrough[0], &LoopThrough[1]) > 0) && ret;
+          StrToByteArr(CurSat.LNB[0].DiSEqC12Flags, StringBuf1, sizeof(CurSat.LNB[0].DiSEqC12Flags));
+          StrToByteArr(CurSat.LNB[1].DiSEqC12Flags, StringBuf2, sizeof(CurSat.LNB[1].DiSEqC12Flags));
 
           // LNBxUnused1; LNBxUnused2; LNBxUnused3; LNBxUnused4; LNBxUnused5;
           ret = (sscanf(Buffer, "%hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %100[^;\r\n] ; %100[^;\r\n] ; ",
-                                 &CurSat.LNB[0].unused1, &CurSat.LNB[1].unused1,  &CurSat.LNB[0].unused2, CurSat.LNB[1].unused2,  &CurSat.LNB[0].unused3, &CurSat.LNB[1].unused3,  &CurSat.LNB[0].unused4, &CurSat.LNB[1].unused4,  StringBuf1, StringBuf2) > 0) && ret;
-          StrToByteArr(&CurSat.LNB[0].unused5, StringBuf1, sizeof(CurSat.LNB[0].unused5));
-          StrToByteArr(&CurSat.LNB[1].unused5, StringBuf2, sizeof(CurSat.LNB[1].unused5));
+                                 &unused1[0], &unused1[1],  &unused2[0], &unused2[1],  &unused3[0], &unused3[1],  &unused4[0], &unused4[1],  StringBuf1, StringBuf2) > 0) && ret;
+          StrToByteArr(CurSat.LNB[0].unused5, StringBuf1, sizeof(CurSat.LNB[0].unused5));
+          StrToByteArr(CurSat.LNB[1].unused5, StringBuf2, sizeof(CurSat.LNB[1].unused5));
+
+          for(j = 0; j <= 1; j++)
+          {
+            CurSat.LNB[j].LNBSupply    = LNBSupply[j];
+            CurSat.LNB[j].DiSEqC10     = DiSEqC10[j];
+            CurSat.LNB[j].UniversalLNB = UniversalLNB[j];
+            CurSat.LNB[j].Switch22     = Switch22[j];
+            CurSat.LNB[j].LowBand      = LowBand[j];
+            CurSat.LNB[j].LoopThrough  = LoopThrough[j];
+            CurSat.LNB[j].unused1      = unused1[j];
+            CurSat.LNB[j].unused2      = unused2[j];
+            CurSat.LNB[j].unused3      = unused3[j];
+            CurSat.LNB[j].unused4      = unused4[j];
+          }
 
           // Unused1; Unknown1; Unused2
           ret = (sscanf(Buffer, "%hi ; %100[^;\r\n] ; %100[^;\r\n]" CRLF,
                                  &CurSat.unused1, StringBuf1, StringBuf2) > 0) && ret;
-          StrToByteArr(&CurSat.unknown1, StringBuf1, sizeof(CurSat.unknown1));
-          StrToByteArr(&CurSat.unused2, StringBuf2, sizeof(CurSat.unused2));
+          StrToByteArr(CurSat.unknown1, StringBuf1, sizeof(CurSat.unknown1));
+          StrToByteArr(CurSat.unused2, StringBuf2, sizeof(CurSat.unused2));
         }
         else
           TAP_PrintNet("Failed to encode sat %d!\n", i);
@@ -942,12 +1089,11 @@ bool ImportSettings_Text(void)
     //   0;      1;      10729;    22000;       0;   0;  1050;    0x1;      0;     n;      2/3;       8PSK;  DVBS2;   V;    0;         n;        0;        0;        0;        0
     {
       tFlashTransponderTable CurTransponder;
-      int                    NrTransponders;
       char                   StringBuf1[10], StringBuf2[10], StringBuf3[10];
 
       for(i = 0; i < FileHeader.NrSatellites; i++)
       {
-        for(j = 0; j < NrTransponders; j++)
+        for(j = 0; j < FileHeader.NrTransponders; j++)
         {
           memset(&CurTransponder, 0, sizeof(CurTransponder));
           if (FlashTransponderTablesGetInfo(i, j, &CurTransponder))
@@ -1011,7 +1157,7 @@ bool ImportSettings_Text(void)
           CurService.FlagLock = CharToBool(CharFlagLock);
           CurService.FlagSkip = CharToBool(CharFlagSkip);
           CurService.NameLock = CharToBool(CharNameLock);
-          StrToByteArr(&CurService.unknown2, StringBuf3, sizeof(CurService.unknown2));
+          StrToByteArr(CurService.unknown2, StringBuf3, sizeof(CurService.unknown2));
         }
         else
           TAP_PrintNet("Failed to encode %s service %d!\n", CurSvcType, i);
@@ -1217,7 +1363,7 @@ bool ImportSettings()
   tExportHeader         FileHeader;
   FILE                 *fImportFile = NULL;
   unsigned long         fs;
-  int                   i;
+  int                   i = 0;
   bool                  ret = FALSE;
   char                 *Buffer = NULL;
 
@@ -1306,6 +1452,7 @@ bool ImportSettings()
             {
               p    = (TYPE_Service_TMSx*)(FIS_vFlashBlockTVServices());
               nSvc = (word*)FIS_vnTvSvc();
+              i    = 0;
 //              DeleteServiceNames(TRUE);
 //              memset(p, 0, *nSvc * SIZE_Service_TMSx);
 //              *nSvc = 0;
@@ -1313,9 +1460,9 @@ bool ImportSettings()
 //              fseek(fImportFile, FileHeader.TVServicesOffset, SEEK_SET);
               if (ret && p && nSvc /*&& (fread(Buffer, SIZE_Service_TMSx, FileHeader.NrTVServices, fImportFile) == (size_t)FileHeader.NrTVServices)*/)
               {
-                memcpy(p, Buffer + FileHeader.TVServicesOffset, FileHeader.NrTVServices * SIZE_Service_TMSx);
-                *nSvc = FileHeader.NrTVServices;
-                TAP_PrintNet("NrTVServices = %lu \n", *nSvc);
+//                memcpy(p, Buffer + FileHeader.TVServicesOffset, FileHeader.NrTVServices * SIZE_Service_TMSx);
+//                *nSvc = FileHeader.NrTVServices;
+//                TAP_PrintNet("NrTVServices = %lu \n", *nSvc);
 
                 TYPE_Service_TMSx* pServices;
                 pServices = (TYPE_Service_TMSx*) (Buffer + FileHeader.TVServicesOffset);
@@ -1327,25 +1474,27 @@ bool ImportSettings()
                     if (pServices[i].NameOffset < (dword)FileHeader.ServiceNamesLength)
                     {
                       TAP_PrintNet("%s\n", &Buffer2[pServices[i].NameOffset]);
-                      p[i].NameOffset = (dword)Appl_AddSvcName(&Buffer2[pServices[i].NameOffset]);
+                      pServices[i].NameOffset = (dword)Appl_AddSvcName(&Buffer2[pServices[i].NameOffset]);
                     }
                     else
-                      p[i].NameOffset = (dword)Appl_AddSvcName("***Dummy***");
+                      pServices[i].NameOffset = (dword)Appl_AddSvcName("***Dummy***");
                   }
                   else
                     ret = FALSE;
                   if (Appl_SetProviderName)
                   {
                     if (pServices[i].ProviderIdx * PROVIDERNAMELENGTH < FileHeader.ProviderNamesLength)
-                      p[i].ProviderIdx = Appl_SetProviderName(&Buffer3[pServices[i].ProviderIdx * PROVIDERNAMELENGTH]);
+                      pServices[i].ProviderIdx = Appl_SetProviderName(&Buffer3[pServices[i].ProviderIdx * PROVIDERNAMELENGTH]);
                     else
-                      p[i].ProviderIdx = Appl_SetProviderName("***Dummy***");
+                      pServices[i].ProviderIdx = Appl_SetProviderName("***Dummy***");
                   }
                   else
                     ret = FALSE;
-                  p[i].NameLock = 0;
-//                  memcpy(&p[i], &pServices[i], SIZE_Service_TMSx);
+                  pServices[i].NameLock = 0;
+                  memcpy(&p[i], &pServices[i], SIZE_Service_TMSx);
+                  *nSvc = (word)(i+1);
                 }
+                TAP_PrintNet("NrTVServices = %lu \n", *nSvc);
               }
               else
                 ret = FALSE;
@@ -1353,6 +1502,7 @@ bool ImportSettings()
 
               p    = (TYPE_Service_TMSx*)(FIS_vFlashBlockRadioServices());
               nSvc = (word*)FIS_vnRadioSvc();
+              i    = 0;
 //              DeleteServiceNames(FALSE);
 //              memset(p, 0, *nSvc * SIZE_Service_TMSx);
 //              *nSvc = 0;
@@ -1396,7 +1546,7 @@ bool ImportSettings()
               }
               else
                 ret = FALSE;
-              TAP_PrintNet((ret) ? "%d TVServices importiert.\n" : "TVServices Fehler\n", i);
+              TAP_PrintNet((ret) ? "%d RadioServices importiert.\n" : "RadioServices Fehler\n", i);
             }
             else
               ret = FALSE;
@@ -1457,17 +1607,45 @@ bool ImportSettings()
 }
 
 
-
-dword TAP_EventHandler(word event, dword param1, dword param2)
+// ----------------------------------------------------------------------------
+//                           MessageBox-Funktionen
+// ----------------------------------------------------------------------------
+// Die Funktionen zeigt einen Informationsdialog (OK) an, und wartet auf die Bestätigung des Benutzers.
+void ShowErrorMessage(char *MessageStr, char *TitleStr)
 {
-  (void) event;
-  (void) param2;
+  dword OldSysState, OldSysSubState;
 
-  return param1;
+  TRACEENTER();
+  HDD_TAP_PushDir();
+  TAP_GetState(&OldSysState, &OldSysSubState);
+
+  OSDMenuMessageBoxInitialize((TitleStr) ? TitleStr : PROGRAM_NAME, MessageStr);
+  OSDMenuMessageBoxDoNotEnterNormalMode(TRUE);
+  OSDMenuMessageBoxButtonAdd("OK");
+  OSDMenuMessageBoxShow();
+  CSShowMessageBox = TRUE;
+  while (CSShowMessageBox)
+  {
+    TAP_SystemProc();
+    TAP_Sleep(1);
+  }
+
+  TAP_Osd_Sync();
+  if(OldSysSubState != 0) TAP_EnterNormalNoInfo();
+
+  HDD_TAP_PopDir();
+  TRACEEXIT();
 }
+
 
 int TAP_Main(void)
 {
+  #if STACKTRACE == TRUE
+    CallTraceInit();
+    CallTraceEnable(TRUE);
+    TRACEENTER();
+  #endif
+
   if (InitSystemType())
   {
     TAP_Hdd_ChangeDir("/");
@@ -1476,6 +1654,7 @@ int TAP_Main(void)
       DeleteTimers();
       DeleteAllSettings();
       ImportSettings_Text();
+      ShowErrorMessage("Einstellungen (Text) importiert.", NULL);
     }
 /*    else if(TAP_Hdd_Exist(EXPORTFILENAME ".dat"))
     {
@@ -1487,13 +1666,33 @@ int TAP_Main(void)
 //      ImportTransponder();
       ImportSettings();
 //      Appl_ImportChData("Settings.std");
+      ShowErrorMessage("Einstellungen (binär) importiert.", NULL);
     }
 */    else
     {
       ExportSettings();
       ExportSettings_Text();
 //      Appl_ExportChData("Settings.std");
+      ShowErrorMessage("Einstellungen exportiert.", NULL);
     }
   }
   return 0;
+}
+
+dword TAP_EventHandler(word event, dword param1, dword param2)
+{
+  TRACEENTER();
+
+  // Behandlung offener MessageBoxen (rekursiver Aufruf, auch bei DoNotReenter)
+  if(CSShowMessageBox)
+  {
+    if(OSDMenuMessageBoxIsVisible())
+      OSDMenuEvent(&event, &param1, &param2);
+    if(!OSDMenuMessageBoxIsVisible())
+      CSShowMessageBox = FALSE;
+    param1 = 0;
+  }
+
+  TRACEEXIT();
+  return param1;
 }
