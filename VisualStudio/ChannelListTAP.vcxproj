@@ -12,9 +12,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\source\ChannelListTAP.h" />
+    <ClInclude Include="..\source\FlashSatTablesSetInfo.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\ChannelListTAP.c" />
+    <ClCompile Include="..\source\FlashSatTablesSetInfo.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\source\build_TMS.bat" />
+    <None Include="..\source\Makedebug" />
+    <None Include="..\source\Makefile" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3032205D-61A9-4096-8EA0-DF54610DED91}</ProjectGuid>
