@@ -1030,7 +1030,7 @@ bool ImportSettings_Text(void)
   bool                  HeaderCheck[3];
   int                   NrImpSatellites=0, NrImpTransponders=0, NrImpTVServices=0, NrImpRadioServices=0, NrImpFavGroups=0;
   bool                  ret = FALSE;
-  int                   i, j;
+  int                   i, j, p;
 
   TRACEENTER();
   TAP_PrintNet("Starte Text Import...\n");
@@ -1049,7 +1049,7 @@ bool ImportSettings_Text(void)
 
     while (ret && (getline(&Buffer, &BufSize, fImportFile) >= 0))
     {
-      int p = strlen(Buffer);
+      p = strlen(Buffer);
       while ((Buffer[p-1] == '\r') || (Buffer[p-1] == '\n'))
       {
         Buffer[p-1] = '\0';
@@ -1099,7 +1099,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           if (strcmp(Buffer, "[Satellites]") == 0)
             CurMode = SM_Satellites;
           else if (strcmp(Buffer, "[Transponders]") == 0)
-            CurMode = SM_Satellites;
+            CurMode = SM_Transponders;
           else if (strcmp(Buffer, "[TVServices]") == 0)
             CurMode = SM_TVServices;
           else if (strcmp(Buffer, "[RadioServices]") == 0)
@@ -1173,26 +1173,33 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           char                   StringBuf1[100], StringBuf2[100];
           byte                   LNBSupply[2], DiSEqC10[2], LoopThrough[2], unused1[2], unused2[2], unused3[2], unused4[2];
           word                   UniversalLNB[2], Switch22[2], LowBand[2];
+          int                    BytesRead = 0;
 
           memset(&CurSat, 0, sizeof(tFlashSatTable));
+          p = 0;
 
           // Nr; SatName; SatPosition; NrTransponders;
-          ret = (sscanf(Buffer, "%i ; %15[^;\r\n] ; %hi ; %hi ; ",
-                                  &i, CurSat.SatName, &CurSat.SatPosition, &CurSat.NrOfTransponders) == 4) && ret;
+          ret = (sscanf(Buffer, "%i ; %15[^;\r\n] ; %hi ; %hi ; %n",
+                                 &i, CurSat.SatName, &CurSat.SatPosition, &CurSat.NrOfTransponders, &BytesRead) == 4) && ret;
+          p += BytesRead;
           RTrim(CurSat.SatName);
-
+TAP_PrintNet("ret=%d, BytesRead=%d, p=%d\n", ret, BytesRead, p);
+TAP_PrintNet("Buffer=%s\n", &Buffer[p]);
           // LNBxSupply; LNBxDiSEqC10; LNBxDiSEqC11; LNBxDiSeqC12; LNBxDiSEqC12Flags; LNBxUniversal; LNBxSwitch22; LNBxLowBand; LNBxHBFrq; LNBxLoop
-          ret = (sscanf(Buffer, "%hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %9[^;\r\n] ; %9[^;\r\n] ;  %hi ; %hi ;  %hi ; %hi ;  %hi ; %hi ;  %hi ; %hi ;  %hhi ; %hhi ; ",
-                                  &LNBSupply[0], &LNBSupply[1],  &DiSEqC10[0], &DiSEqC10[1],  &CurSat.LNB[0].DiSEqC11, &CurSat.LNB[1].DiSEqC11,  &CurSat.LNB[0].DiSEqC12, &CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  &UniversalLNB[0], &UniversalLNB[1],  &Switch22[0], &Switch22[1],  &LowBand[0], &LowBand[1],  &CurSat.LNB[0].HBFrq, &CurSat.LNB[1].HBFrq,  &LoopThrough[0], &LoopThrough[1]) == 20) && ret;
+          ret = (sscanf(&Buffer[p], "%hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %9[^;\r\n] ; %9[^;\r\n] ;  %hi ; %hi ;  %hi ; %hi ;  %hi ; %hi ;  %hi ; %hi ;  %hhi ; %hhi ; %n",
+                                     &LNBSupply[0], &LNBSupply[1],  &DiSEqC10[0], &DiSEqC10[1],  &CurSat.LNB[0].DiSEqC11, &CurSat.LNB[1].DiSEqC11,  &CurSat.LNB[0].DiSEqC12, &CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  &UniversalLNB[0], &UniversalLNB[1],  &Switch22[0], &Switch22[1],  &LowBand[0], &LowBand[1],  &CurSat.LNB[0].HBFrq, &CurSat.LNB[1].HBFrq,  &LoopThrough[0], &LoopThrough[1], &BytesRead) == 20) && ret;
+          p += BytesRead;
+TAP_PrintNet("ret=%d, BytesRead=%d, p=%d\n", ret, BytesRead, p);
           ret = StrToByteArr(CurSat.LNB[0].DiSEqC12Flags, StringBuf1, sizeof(CurSat.LNB[0].DiSEqC12Flags)) && ret;
           ret = StrToByteArr(CurSat.LNB[1].DiSEqC12Flags, StringBuf2, sizeof(CurSat.LNB[1].DiSEqC12Flags)) && ret;
-
+TAP_PrintNet("ret=%d, BytesRead=%d, p=%d\n", ret, BytesRead, p);
           // LNBxUnused1; LNBxUnused2; LNBxUnused3; LNBxUnused4; LNBxUnused5;
-          ret = (sscanf(Buffer, "%hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %15[^;\r\n] ; %15[^;\r\n] ; ",
-                                  &unused1[0], &unused1[1],  &unused2[0], &unused2[1],  &unused3[0], &unused3[1],  &unused4[0], &unused4[1],  StringBuf1, StringBuf2) == 10) && ret;
+          ret = (sscanf(&Buffer[p], "%hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %15[^;\r\n] ; %15[^;\r\n] ; %n",
+                                     &unused1[0], &unused1[1],  &unused2[0], &unused2[1],  &unused3[0], &unused3[1],  &unused4[0], &unused4[1],  StringBuf1, StringBuf2, &BytesRead) == 10) && ret;
+          p += BytesRead;
           ret = StrToByteArr(CurSat.LNB[0].unused5, StringBuf1, sizeof(CurSat.LNB[0].unused5)) && ret;
           ret = StrToByteArr(CurSat.LNB[1].unused5, StringBuf2, sizeof(CurSat.LNB[1].unused5)) && ret;
-
+TAP_PrintNet("ret=%d, BytesRead=%d, p=%d\n", ret, BytesRead, p);
           for(j = 0; j <= 1; j++)
           {
             CurSat.LNB[j].LNBSupply    = LNBSupply[j];
@@ -1208,11 +1215,11 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           }
 
           // Unused1; Unknown1; Unused2
-          ret = (sscanf(Buffer, "%hi ; %66[^;\r\n] ; %24[^;\r\n]" CRLF,
-                                  &CurSat.unused1, StringBuf1, StringBuf2) == 3) && ret;
+          ret = (sscanf(&Buffer[p], "%hi ; %66[^;\r\n] ; %24[^;\r\n]" CRLF,
+                                     &CurSat.unused1, StringBuf1, StringBuf2) == 3) && ret;
           ret = StrToByteArr(CurSat.unknown1, StringBuf1, sizeof(CurSat.unknown1)) && ret;
           ret = StrToByteArr(CurSat.unused2, StringBuf2, sizeof(CurSat.unused2)) && ret;
-
+TAP_PrintNet("ret=%d, BytesRead=%d, p=%d\n", ret, BytesRead, p);
           CurSat.NrOfTransponders = 0;
 //          if (ret)
 //            ret = FlashSatTablesSetInfo(NrImpSatellites, &CurSat);
@@ -1295,14 +1302,13 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           CurService.NameLock = CharToBool(CharNameLock);
           ret = StrToByteArr(CurService.unknown2, StringBuf3, sizeof(CurService.unknown2)) && ret;
 
-          if (ret && (CurService.SatIndex < NrImpSatellites) && (CurService.TransponderIndex < NrImpTransponders))
-            ret = FlashServiceAdd((CurMode==SM_TVServices) ? SVC_TYPE_Tv : SVC_TYPE_Radio, &CurService);
-          else
-            ret = FALSE;
+//          if (ret && (CurService.SatIndex < NrImpSatellites) && (CurService.TransponderIndex < NrImpTransponders))
+//            ret = FlashServiceAdd((CurMode==SM_TVServices) ? SVC_TYPE_Tv : SVC_TYPE_Radio, &CurService);
+//          else
+//            ret = FALSE;
 
           if (ret)
-            ret = TRUE;
-//            (CurMode==SM_TVServices) ? NrImpTVServices++ : NrImpRadioServices++;
+            (CurMode==SM_TVServices) ? NrImpTVServices++ : NrImpRadioServices++;
           else
             TAP_PrintNet("Fehler in %s-Service Nr. %d!\n", (CurMode==SM_TVServices) ? "TV" : "Radio", (CurMode==SM_TVServices) ? NrImpTVServices : NrImpRadioServices);
           break;
