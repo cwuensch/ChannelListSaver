@@ -815,7 +815,7 @@ bool ExportSettings_Text(void)
 
     // Write the file header
     ret = (fprintf(fExportFile, "[ChannelListSaver]" CRLF)               > 0) && ret;
-    ret = (fprintf(fExportFile, "FileVersion=%d" CRLF,  2)               > 0) && ret;
+    ret = (fprintf(fExportFile, "FileVersion=%d" CRLF,  1)               > 0) && ret;
     FileSizePos = ftell(fExportFile);
     ret = (fprintf(fExportFile, "FileSize=%010d" CRLF,  0)               > 0) && ret;
     ret = (fprintf(fExportFile, "SystemType=%d" CRLF,   GetSystemType()) > 0) && ret;
@@ -905,7 +905,7 @@ bool ExportSettings_Text(void)
             ret = (fprintf(fExportFile, "%4d;    %3hhu; %10lu;    %5hu;     %3hhu; %3hhu; %5hu; %#6x; %#6x;     "  // Nr; SatIdx; Frequency; SymbRate; Channel; BW; TSID; ONWID; NWID
                                         "%c; %8s;   %8s;  "                                                        // Pilot; FEC; Modulation
                                         "%5s;   %c;  %3hhu;         %c;   "                                        // System; Pol; LPHP; ClockSync
-                                        "%#6x;   %#6x;     %#4x;     %#6x" CRLF,                                   // Unknown1; Unknown2; Unknown3; Unknown4
+                                        "%#6x;   %#6x;     %#4x;   %#6x" CRLF,                                     // Unknown1; Unknown2; Unknown3; Unknown4
                                          j, CurTransponder.SatIndex, CurTransponder.Frequency, CurTransponder.SymbolRate, CurTransponder.ChannelNr, CurTransponder.Bandwidth, CurTransponder.TSID, CurTransponder.OriginalNetworkID, CurTransponder.NetworkID,
                                          BoolToChar(CurTransponder.Pilot), FECtoStr(StringBuf1, CurTransponder.FEC), ModulationToStr(StringBuf2, CurTransponder.Modulation),
                                          (CurTransponder.ModSystem ? "DVBS2" : "DVBS"), (CurTransponder.Polarisation ? 'H' : 'V'), CurTransponder.LPHP, BoolToChar(CurTransponder.ClockSync),
@@ -1049,6 +1049,14 @@ bool ImportSettings_Text(void)
 
     while (ret && (getline(&Buffer, &BufSize, fImportFile) >= 0))
     {
+      int p = strlen(Buffer);
+      while ((Buffer[p-1] == '\r') || (Buffer[p-1] == '\n'))
+      {
+        Buffer[p-1] = '\0';
+        if (p > 0) p = p-1;
+      }
+TAP_PrintNet("%d: %s\n", CurMode, Buffer);
+
       // Prüfung der ersten Zeile
       if (CurMode == SM_Start)
       {
@@ -1067,20 +1075,53 @@ bool ImportSettings_Text(void)
         }
       }
 
+      // Kommentare und Sektionen
+      switch (Buffer[0])
+      {
+        case '\0':
+          continue;
+
+        case '%':
+        case ';':
+        case '#':
+        case '/':
+          continue;
+
+        // Neue Sektion gefunden
+        case '[':
+        {
+          if (CurMode == SM_Header)
+          {
+            TAP_PrintNet("Fehler: Ungültiger Header!\n");
+            ret = FALSE;
+            continue;
+          }
+          if (strcmp(Buffer, "[Satellites]") == 0)
+            CurMode = SM_Satellites;
+          else if (strcmp(Buffer, "[Transponders]") == 0)
+            CurMode = SM_Satellites;
+          else if (strcmp(Buffer, "[TVServices]") == 0)
+            CurMode = SM_TVServices;
+          else if (strcmp(Buffer, "[RadioServices]") == 0)
+            CurMode = SM_RadioServices;
+          else if (strcmp(Buffer, "[Favorites]") == 0)
+            CurMode = SM_Favorites;
+          else
+          {
+            TAP_PrintNet("Warnung: Unbekannte Sektion: %s!\n", Buffer);
+            CurMode = SM_Ignore;
+          }
+          continue;
+        }
+      }
+
       // Header überprüfen
       if ((CurMode == SM_Header) || (CurMode == SM_HeaderChecked))
       {
         char            Name[50];
         unsigned long   Value;
 
-        if (Buffer[0] == '[')
-        {
-          TAP_PrintNet("Fehler: Ungültiger Header!\n");
-          ret = FALSE;
-          break;
-        }
-
-        if (sscanf(Buffer, "%49s = %lu", Name, &Value) == 2)
+        if (sscanf(Buffer, "%49[^= ] = %lu", Name, &Value) == 2)
         {
           if (strcmp(Name, "FileVersion") == 0)
           {
@@ -1117,38 +1158,6 @@ bool ImportSettings_Text(void)
             CurMode = SM_HeaderChecked;
         }
         continue;
-      }
-
-      // Neue Sektion gefunden
-      switch (Buffer[0])
-      {
-        case '\0':
-          continue;
-
-        case '%':
-        case ';':
-        case '/':
-          continue;
-
-        case '[':
-        {
-          if (strcmp(Buffer, "[Satellites]") == 0)
-            CurMode = SM_Satellites;
-          else if (strcmp(Buffer, "[Transponders]") == 0)
-            CurMode = SM_Satellites;
-          else if (strcmp(Buffer, "[TVServices]") == 0)
-            CurMode = SM_TVServices;
-          else if (strcmp(Buffer, "[RadioServices]") == 0)
-            CurMode = SM_RadioServices;
-          else if (strcmp(Buffer, "[Favorites]") == 0)
-            CurMode = SM_Favorites;
-          else
-          {
-            TAP_PrintNet("Warnung: Unbekannte Sektion: %s!\n", Buffer);
-            CurMode = SM_Ignore;
-          }
-          continue;
-        }
       }
 
       // Beliebige Zeile gefunden -> importieren!
@@ -1204,8 +1213,9 @@ bool ImportSettings_Text(void)
           ret = StrToByteArr(CurSat.unknown1, StringBuf1, sizeof(CurSat.unknown1)) && ret;
           ret = StrToByteArr(CurSat.unused2, StringBuf2, sizeof(CurSat.unused2)) && ret;
 
-          if (ret)
-            ret = FlashSatTablesSetInfo(NrImpSatellites, &CurSat);
+          CurSat.NrOfTransponders = 0;
+//          if (ret)
+//            ret = FlashSatTablesSetInfo(NrImpSatellites, &CurSat);
 
           if (ret)
             NrImpSatellites++;
@@ -1243,7 +1253,8 @@ bool ImportSettings_Text(void)
           CurTransponder.ClockSync = CharToBool(CharClockSync);
 
           if (ret && (CurTransponder.SatIndex < NrImpSatellites))
-            ret = FlashTransponderTablesAdd(CurTransponder.SatIndex, &CurTransponder);
+            ret = TRUE;
+//            ret = FlashTransponderTablesAdd(CurTransponder.SatIndex, &CurTransponder);
           else
             ret = FALSE;
 
@@ -1290,7 +1301,8 @@ bool ImportSettings_Text(void)
             ret = FALSE;
 
           if (ret)
-            (CurMode==SM_TVServices) ? NrImpTVServices++ : NrImpRadioServices++;
+            ret = TRUE;
+//            (CurMode==SM_TVServices) ? NrImpTVServices++ : NrImpRadioServices++;
           else
             TAP_PrintNet("Fehler in %s-Service Nr. %d!\n", (CurMode==SM_TVServices) ? "TV" : "Radio", (CurMode==SM_TVServices) ? NrImpTVServices : NrImpRadioServices);
           break;
@@ -1328,8 +1340,8 @@ bool ImportSettings_Text(void)
 //          (p + i * SIZE_Favorites)[0] = '*';
           TAP_PrintNet("FavGroup %d: Name = '%s', Entries = %d\n", i, CurFavGroup.GroupName, CurFavGroup.NrEntries);
 
-          if (ret)
-            ret = FlashFavoritesSetInfo(NrImpFavGroups, &CurFavGroup);
+//          if (ret)
+//            ret = FlashFavoritesSetInfo(NrImpFavGroups, &CurFavGroup);
 
           if (ret)
             NrImpFavGroups++;
@@ -1728,13 +1740,33 @@ int TAP_Main(void)
     TRACEENTER();
   #endif
 
+
+/*
+  CURL *test = NULL;
+  FILE *out = NULL, *in = NULL;
+  out = fopen("/mnt/hd/MediaFiles/Curl.mp4", "wb");
+  in = fopen("/tmp/test.txt", "r+b");
+
+  test = curl_easy_init();
+  curl_easy_setopt(test, CURLOPT_URL, "http://r2---sn-xjpm-4g5e.googlevideo.com/videoplayback?source=youtube&upn=zijuk6VfMzk&mv=u&sparams=dur,id,ip,ipbits,itag,mime,mm,ms,mv,pl,ratebypass,source,upn,expire&mime=video%2Fmp4&mt=1422829184&ms=au&ip=148.251.123.45&key=yt5&signature=9B2882C7D512BAA2EF50F426EB8E83D51F792003.B704D4B8F32041DC651559C9797AE93C685878B3&ratebypass=yes&expire=1422851242&ipbits=0&mm=31&dur=2158.828&id=o-AJwD7b_5E9885aBGx5zCc8A8QiKioRsDmW-S2TXZ2EsW&fexp=900718,902404,907263,916600,927622,930676,931995,9405118,9406557,943917,947225,948124,952302,952605,952901,955301,957201,958101,959701&sver=3&pl=26&itag=22&title=REUPLOAD%20%7C%7C%20ZDF%20Heute%20Show%2014%2E11%2E2014%20mit%20Oliver%20Welke%20-%20HD50"); // "http://mvideos.daserste.de/videoportal/Film/c_500000/502515/format599229.mp4");
+  curl_easy_setopt(test, CURLOPT_REFERER, "http://www.youtube.com");
+//  curl_easy_setopt(test, CURLOPT_COOKIEFILE, "/tmp/test");
+  curl_easy_setopt(test, CURLOPT_FILE, out);
+  TAP_PrintNet("curl return: %d\n", curl_easy_perform(test));
+  curl_easy_cleanup(test);
+
+  fclose(in);
+  fclose(out);
+  return 0;
+*/
+    
   if (InitSystemType())
   {
     TAP_Hdd_ChangeDir("/");
     if(TAP_Hdd_Exist(EXPORTFILENAME ".txt"))
     {
-      DeleteTimers();
-      DeleteAllSettings();
+//      DeleteTimers();
+//      DeleteAllSettings();
       ImportSettings_Text();
       ShowErrorMessage("Einstellungen (Text) importiert.", NULL);
     }
@@ -1754,7 +1786,7 @@ int TAP_Main(void)
     {
       ExportSettings();
       ExportSettings_Text();
-//      Appl_ExportChData("Settings.std");
+      Appl_ExportChData("Settings.std");
       ShowErrorMessage("Einstellungen exportiert.", NULL);
     }
   }
