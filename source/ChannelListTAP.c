@@ -417,16 +417,15 @@ void DebugServiceNames(char* FileName)
   }
 }
 
-void DeleteServiceNames(int nTVServices, int nRadioServices)
+void DeleteServiceNames(void)
 {
   void  (*Appl_DeleteTvSvcName)(unsigned short, bool);
   void  (*Appl_DeleteRadioSvcName)(unsigned short, bool);
   Appl_DeleteTvSvcName    = (void*)FIS_fwAppl_DeleteTvSvcName();
   Appl_DeleteRadioSvcName = (void*)FIS_fwAppl_DeleteRadioSvcName();
 
-  int i;
-  if ((nTVServices == 0) && (nRadioServices == 0))
-    TAP_Channel_GetTotalNum(&nTVServices, &nRadioServices);
+  int nTVServices, nRadioServices, i;
+  TAP_Channel_GetTotalNum(&nTVServices, &nRadioServices);
 
 //  DebugServiceNames("vorher.dat");
 //  char tmp[512];
@@ -447,7 +446,6 @@ void DeleteServiceNames(int nTVServices, int nRadioServices)
 
 bool DeleteAllSettings(void)
 {
-  int  nTVServices=0, nRadioServices=0;
   bool ret = TRUE;
 
   {
@@ -463,36 +461,10 @@ bool DeleteAllSettings(void)
   }
 
   {
-    // TV Services
-    TYPE_Service_TMSS      *p;
-    word                   *nSvc;
-
-    p    = (TYPE_Service_TMSS*)(FIS_vFlashBlockTVServices());
-    nSvc = (word*)FIS_vnTvSvc();
-    if (p && nSvc)
-    {
-      nTVServices = *nSvc;
-      *nSvc = 0;
-      memset(p, 0, *nSvc * SIZE_Service_TMSx);
-    }
-
-    // Radio Services
-    p    = (TYPE_Service_TMSS*)(FIS_vFlashBlockRadioServices());
-    nSvc = (word*)FIS_vnRadioSvc();
-    if (p && nSvc)
-    {
-      nRadioServices = *nSvc;
-      *nSvc = 0;
-      memset(p, 0, *nSvc * SIZE_Service_TMSx);
-    }
-    else ret = FALSE;
-  }
-
-  {
     // Service Names
     char                 *p1, *p2;
 
-    DeleteServiceNames(nTVServices, nRadioServices);
+    DeleteServiceNames();
 //    p1 = (char*)(FIS_vFlashBlockServiceName());
 //    p2 = (char*)(FIS_vFlashBlockProviderInfo());
 //    if(p1 && p2 && (p2 > p1))
@@ -509,16 +481,45 @@ bool DeleteAllSettings(void)
   }
 
   {
+    // TV Services
+    TYPE_Service_TMSS      *p;
+    word                   *nSvc;
+    word                    nServices;
+
+    p    = (TYPE_Service_TMSS*)(FIS_vFlashBlockTVServices());
+    nSvc = (word*)FIS_vnTvSvc();
+    if (p && nSvc)
+    {
+      nServices = *nSvc;
+      *nSvc = 0;
+      memset(p, 0, *nSvc * SIZE_Service_TMSx);
+    }
+
+    // Radio Services
+    p    = (TYPE_Service_TMSS*)(FIS_vFlashBlockRadioServices());
+    nSvc = (word*)FIS_vnRadioSvc();
+    if (p && nSvc)
+    {
+      nServices = *nSvc;
+      *nSvc = 0;
+      memset(p, 0, *nSvc * SIZE_Service_TMSx);
+    }
+    else ret = FALSE;
+  }
+
+  {
     // Transponders
     TYPE_TpInfo_TMSS *p;
-    dword            *NrTransponders;
+    dword            *pNrTransponders;
+    dword             NrTransponders;
           
     p = (TYPE_TpInfo_TMSS*)(FIS_vFlashBlockTransponderInfo());
     if (p)
     {
-      NrTransponders = (dword*)(p) - 1;
-      *NrTransponders = 0;
-      memset(p, 0, *NrTransponders * SIZE_TpInfo_TMSx);
+      pNrTransponders = (dword*)(p) - 1;
+      NrTransponders = *pNrTransponders;
+      *pNrTransponders = 0;
+      memset(p, 0, NrTransponders * SIZE_TpInfo_TMSx);
     }
     else ret = FALSE;
   }
