@@ -1,0 +1,31 @@
+# To add a new language, copy a block and translate it
+# the following codes are supported:
+#
+# LAN_Arab          ar
+# LAN_Czech         cs
+# LAN_Danish        da
+# LAN_Dutch         nl
+# LAN_English       en
+# LAN_French        fr
+# LAN_German        de
+# LAN_Greek         el
+# LAN_Italy         it
+# LAN_Norwegian     no
+# LAN_Persian       fa
+# LAN_Polish        pl
+# LAN_Russian       ru
+# LAN_Slovak        sk
+# LAN_Spain         es
+# LAN_Suomi         fi
+# LAN_Swedish       sv
+# LAN_Thai          th
+# LAN_Turk          tr
+
+
+#Deutsch
+de_000=SystemType ist unbekannt.\n\nBitte die FirmwareTMS.dat überprüfen!
+
+
+#English
+en_000=Unknown SystemType.\n\nPlease check FirmwareTMS.dat!
+

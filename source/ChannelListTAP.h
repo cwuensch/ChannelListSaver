@@ -1,18 +1,20 @@
 #ifndef __CHANNELLISTTAPH__
 #define __CHANNELLISTTAPH__
+#undef sprintf
+#define TAP_SPrint    snprintf
 
 #define PROGRAM_NAME          "ChannelListSaver"
-#define VERSION               "V0.3"
-#define TAPID                 0x8E0A4271
+#define VERSION               "V0.4"
+#define TAPID                 0x2A0A0002
 #define AUTHOR                "chris86"
-#define DESCRIPTION           "Import/Export of Sat, Transponder, Service, Favorites lists"
+#define DESCRIPTION           "Im-/Export of Satellites-, Transponder-, Service- & Favorites-List"
 
-#define LOGDIR                "/ProgramFiles/Settings/ChannelListSaver"
+#define LOGDIR                "/ProgramFiles/Settings/" PROGRAM_NAME
 #define LNGFILENAME           PROGRAM_NAME ".lng"
 #define INIFILENAME           PROGRAM_NAME ".ini"
 
 
-#define EXPORTFILENAME        "ProgramFiles/Channels"
+#define EXPORTFILENAME        "Channels"
 #define CRLF                  "\r\n"
 
 #define PROVIDERNAMELENGTH    21
@@ -20,8 +22,74 @@
 #define SERVICENAMESLENGTH    39996    // 40000 / 40004 / 39996 ***  ?
 
 
+typedef struct
+{
+  char                  Magic[6];     // TFchan
+  short                 FileVersion;  // 1
+  SYSTEM_TYPE           SystemType;
+  bool                  UTF8System;
+  unsigned long         FileSize;
+
+  int                   SatellitesOffset;
+  int                   TranspondersOffset;
+  int                   TVServicesOffset;
+  int                   RadioServicesOffset;
+  int                   FavoritesOffset;
+  int                   ProviderNamesOffset;
+  int                   ServiceNamesOffset;
+
+  int                   NrSatellites;
+  int                   NrTransponders;
+  int                   NrTVServices;
+  int                   NrRadioServices;
+  int                   ProviderNamesLength;
+  int                   ServiceNamesLength;
+  int                   NrFavGroups;
+  int                   NrSvcsPerFavGroup;
+} tExportHeader;
+
+
+#define SYSTYPE 7
+#if (SYSTYPE == 5)    // ST_TMSS
+  typedef TYPE_SatInfo_TMSS             TYPE_SatInfo_TMSx;
+  typedef TYPE_TpInfo_TMSS              TYPE_TpInfo_TMSx;
+  typedef TYPE_Service_TMSS             TYPE_Service_TMSx;
+#elif (SYSTYPE == 7)  // ST_TMSC
+  typedef TYPE_SatInfo_TMSC             TYPE_SatInfo_TMSx;
+  typedef TYPE_TpInfo_TMSC              TYPE_TpInfo_TMSx;
+  typedef TYPE_Service_TMSC             TYPE_Service_TMSx;
+#elif (SYSTYPE == 6)  // ST_TMST
+  typedef TYPE_SatInfo_TMST             TYPE_SatInfo_TMSx;
+  typedef TYPE_TpInfo_TMST              TYPE_TpInfo_TMSx;
+  typedef TYPE_Service_TMST             TYPE_Service_TMSx;
+#endif
+
+
+SYSTEM_TYPE                  CurSystemType;
+int                          NrFavGroups;
+int                          NrFavsPerGroup;
+size_t                       SIZE_SatInfo_TMSx;
+size_t                       SIZE_TpInfo_TMSx;
+size_t                       SIZE_Service_TMSx;
+size_t                       SIZE_Favorites;
+
+
 int   TAP_Main(void);
 dword TAP_EventHandler(word event, dword param1, dword param2);
 
+void  WriteLogCS(char *ProgramName, char *s);
+void  WriteLogCSf(char *ProgramName, const char *format, ...);
+
+int   ShowConfirmationDialog(char *MessageStr);
+void  ShowErrorMessage(char *MessageStr, char *TitleStr);
+
+void  LoadINI(void);
+void  SaveINI(void);
+
+bool  InitSystemType(void);
+int   GetLengthOfServiceNames(void);
+bool  DeleteTimers(void);
+void  DeleteServiceNames(void);
+bool  DeleteAllSettings(void);
 
 #endif

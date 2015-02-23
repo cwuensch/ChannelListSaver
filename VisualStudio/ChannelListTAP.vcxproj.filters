@@ -18,12 +18,24 @@
     <ClInclude Include="..\source\FlashSatTablesSetInfo.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="..\source\ImExportBin.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="..\source\ImExportText.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\ChannelListTAP.c">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="..\source\FlashSatTablesSetInfo.c">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\ImExportBin.c">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\ImExportText.c">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>

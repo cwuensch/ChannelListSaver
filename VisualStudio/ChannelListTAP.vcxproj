@@ -13,10 +13,14 @@
   <ItemGroup>
     <ClInclude Include="..\source\ChannelListTAP.h" />
     <ClInclude Include="..\source\FlashSatTablesSetInfo.h" />
+    <ClInclude Include="..\source\ImExportBin.h" />
+    <ClInclude Include="..\source\ImExportText.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\ChannelListTAP.c" />
     <ClCompile Include="..\source\FlashSatTablesSetInfo.c" />
+    <ClCompile Include="..\source\ImExportBin.c" />
+    <ClCompile Include="..\source\ImExportText.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\source\build_TMS.bat" />

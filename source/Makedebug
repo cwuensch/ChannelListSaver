@@ -15,8 +15,8 @@ TAP_FLAGS += -g -DDEBUG
 endif
 
 #compile options
-CFLAGS += -DLINUX  -D_REENTRANT  -DFULLDEBUG -MD -W -Wall -O2 -mips32
-CPPFLAGS += -DLINUX  -DFULLDEBUG -MD -W -Wall  -O2 -mips32
+CFLAGS += -DLINUX -D_REENTRANT  -DFULLDEBUG  -MD  -W -Wall  -Os -mips32 -static -pipe	
+CPPFLAGS += -DLINUX  -DFULLDEBUG  -MD  -W -Wall  -Os -mips32 -static -pipe
 
 INCLUDE_DIRS = ${BASE}/include /opt/crosstool/include/
 TAP_INCLUDE_DIRS = $(addprefix -I, $(INCLUDE_DIRS))
@@ -25,9 +25,9 @@ TAP_LIBS = ${BASE}/tapinit.o ${BASE}/libtap.so -lFireBird -ldl -lc
 
 all: $(APP1).tap clean
 
-$(APP1).tap: $(APP1).o FlashSatTablesSetInfo.o
+$(APP1).tap: $(APP1).o ImExportBin.o ImExportText.o FlashSatTablesSetInfo.o
 	@echo "[Linking... $@]"
-	@$(LD) -shared --no-undefined --allow-shlib-undefined FlashSatTablesSetInfo.o -o $@ $< $(TAP_LIBS)
+	@$(LD) -shared --no-undefined --allow-shlib-undefined ImExportBin.o ImExportText.o FlashSatTablesSetInfo.o -o $@ $< $(TAP_LIBS)
 	@$(JB) $@
 
 %.o: %.c ${BASE}/include/libFireBird.h
