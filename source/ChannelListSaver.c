@@ -7,15 +7,14 @@
 //#undef free
 
 #define _GNU_SOURCE
-#include                <string.h>
-#include                <stdio.h>
 #include                <stdlib.h>
+#include                <stdio.h>
 #include                <stdarg.h>
 #include                <tap.h>
 #include                <libFireBird.h>
 #include                "../../../../../Topfield/FireBirdLib/flash/FBLib_flash.h"
 #include                "FlashSatTablesSetInfo.h"
-#include                "ChannelListTAP.h"
+#include                "ChannelListSaver.h"
 #include                "ImExportBin.h"
 #include                "ImExportText.h"
 
@@ -30,15 +29,23 @@ TAP_ETCINFO             (__DATE__);
 typedef enum
 {
   LS_UnknownSystemType,
+  LS_ImportSysQuestion,
+  LS_ImportBinQuestion,
+  LS_ImportTxtQuestion,
+  LS_AnswerImport,
+  LS_AnswerOverwrite,
+  LS_AnswerCancel,
+  LS_ImportBinSuccess,
+  LS_ImportTxtSuccess,
+  LS_ImportError,
+  LS_ExportSuccess,
+  LS_ExportError,
   LS_NrStrings
 } tLngStrings;
 
-
-// ============================================================================
-//                              IMPLEMENTIERUNG
-// ============================================================================
 void OSDMenuMessageBoxDoScrollOver(word *event, dword *param1);
 
+// Globale Variablen
 int                     ImportFormat = 0;  // 0 - Binary, 1 - Text, 2 - System
 bool                    OverwriteSatellites = FALSE;
 
@@ -46,10 +53,15 @@ bool                    CSShowMessageBox = FALSE;
 dword                   LastMessageBoxKey;
 
 
+// ============================================================================
+//                              IMPLEMENTIERUNG
+// ============================================================================
+
 int TAP_Main(void)
 {
-  int Answer = 2;
-  bool ret = TRUE;
+  char                  TempStr[512];
+  int                   Answer = 2;
+  bool                  ret = TRUE;
 
   #if STACKTRACE == TRUE
     CallTraceInit();
@@ -59,17 +71,21 @@ int TAP_Main(void)
 
   WriteLogCS (PROGRAM_NAME, "***  ChannelListSaver " VERSION " started! (FBLib " __FBLIB_VERSION__ ") ***");
   WriteLogCS (PROGRAM_NAME, "=======================================================");
-  WriteLogCSf(PROGRAM_NAME, "Receiver Model: %s (%u)", GetToppyString(GetSysID()), GetSysID());
+  WriteLogCSf(PROGRAM_NAME, "Receiver Model: %s (%u), System Type: TMS-%c (%d)", GetToppyString(GetSysID()), GetSysID(), SysTypeToStr(), GetSystemType());
   WriteLogCSf(PROGRAM_NAME, "Firmware: %s", GetApplVer());
+
+//  TAP_EnterNormalNoInfo();
 
   // Load Language Strings
   if(!LangLoadStrings(LNGFILENAME, LS_NrStrings, LAN_English, PROGRAM_NAME))
   {
-    WriteLogCSf(PROGRAM_NAME, "Language file '%s' not found!", LNGFILENAME);
+    WriteLogCSf(PROGRAM_NAME, "Language file '%s' not found!\r\n", LNGFILENAME);
     OSDMenuInfoBoxShow(PROGRAM_NAME " " VERSION, "Language file not found!", 500);
+    CSShowMessageBox = TRUE;
     do
     {
-      OSDMenuEvent(NULL, NULL, NULL);
+      TAP_SystemProc();
+      TAP_Sleep(1);
     } while(OSDMenuInfoBoxIsVisible());
 
     TRACEEXIT();
@@ -84,64 +100,64 @@ int TAP_Main(void)
 
     if (TAP_Hdd_Exist("Settings.std") && (ImportFormat == 2 || (!TAP_Hdd_Exist(EXPORTFILENAME ".dat") && !TAP_Hdd_Exist(EXPORTFILENAME ".txt"))))
     {
-      Answer = ShowConfirmationDialog("System-Backup 'Settings.std' gefunden.\nSoll diese nun importiert werden?");
+      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportSysQuestion), "Settings.std");
+      Answer = ShowConfirmationDialog(TempStr);
       if (Answer == 1)
-      {
-        WriteLogCS(PROGRAM_NAME, "[Aktion] Importiere 'Settings.std' (System)...");
-        ret = Appl_ImportChData("Settings.std");
-        if (ret)
-          WriteLogCS(PROGRAM_NAME, "--> Import erfolgreich!");
-        else
-          WriteLogCS(PROGRAM_NAME, "--> Fehler beim Import!");
-      }
+        ret = HDD_ImExportChData("Settings.std", TAPFSROOT LOGDIR, TRUE);
     }
 
     else if (TAP_Hdd_Exist(EXPORTFILENAME ".txt") && (ImportFormat == 1 || !TAP_Hdd_Exist(EXPORTFILENAME ".dat")))
     {
-      Answer = ShowConfirmationDialog("Text-Datei '" EXPORTFILENAME "' gefunden.\nSoll diese nun importiert werden?");
+      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportTxtQuestion), EXPORTFILENAME ".txt");
+      Answer = ShowConfirmationDialog(TempStr);
       if (Answer == 1)
       {
-        WriteLogCS(PROGRAM_NAME, "[Aktion] Importiere '" EXPORTFILENAME ".txt' (Text)...");
-        DeleteTimers();
-        ret = (DeleteAllSettings() &&
+//        WriteLogCS(PROGRAM_NAME, "[Aktion] Importiere '" EXPORTFILENAME ".txt' (Text)...");
+        #ifdef FULLDEBUG
+          HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
+        #endif
+        ret = (DeleteAllSettings(OverwriteSatellites) &&
                ImportSettings_Text(EXPORTFILENAME ".txt", TAPFSROOT LOGDIR, OverwriteSatellites));
+        #ifdef FULLDEBUG
+          ExportSettings("Debug_AfterTxtImport.dat", TAPFSROOT LOGDIR);
+        #endif
         if (ret)
-          ShowErrorMessage("Einstellungen (Text) importiert.", NULL);
+          ShowErrorMessage(LangGetString(LS_ImportTxtSuccess), NULL);
         else
-          ShowErrorMessage("Fehler beim Import!\n\nBitte das Logfile prüfen...", NULL);
+          ShowErrorMessage(LangGetString(LS_ImportError), NULL);
       }
     }
 
     else if(TAP_Hdd_Exist(EXPORTFILENAME ".dat"))
     {
-      Answer = ShowConfirmationDialog("Binär-Datei '" EXPORTFILENAME ".dat' gefunden.\nSoll diese nun importiert werden?");
+      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportBinQuestion), EXPORTFILENAME ".dat");
+      Answer = ShowConfirmationDialog(TempStr);
       if (Answer == 1)
       {
-        WriteLogCS(PROGRAM_NAME, "[Aktion] Importiere '" EXPORTFILENAME ".dat' (binär)...");
-        DeleteTimers();
-        ret = (DeleteAllSettings() &&
+//        WriteLogCS(PROGRAM_NAME, "[Aktion] Importiere '" EXPORTFILENAME ".dat' (binär)...");
+        #ifdef FULLDEBUG
+          HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
+        #endif
+        ret = (DeleteAllSettings(OverwriteSatellites) &&
                ImportSettings(EXPORTFILENAME ".dat", TAPFSROOT LOGDIR, OverwriteSatellites));
+        #ifdef FULLDEBUG
+          ExportSettings("Debug_AfterBinImport.dat", TAPFSROOT LOGDIR);
+        #endif
         if (ret)
-          ShowErrorMessage("Einstellungen (Text) importiert.", NULL);
+          ShowErrorMessage(LangGetString(LS_ImportBinSuccess), NULL);
         else
-          ShowErrorMessage("Fehler beim Import!\n\nBitte das Logfile prüfen...", NULL);
+          ShowErrorMessage(LangGetString(LS_ImportError), NULL);
       }
     }
 
-    else if (Answer == 2)
+    if (Answer == 2)
     {
-      WriteLogCS(PROGRAM_NAME, "[Aktion] Exportiere Settings...");
-      ret = ExportSettings(EXPORTFILENAME ".dat",      TAPFSROOT LOGDIR) && ret;
+//      WriteLogCS(PROGRAM_NAME, "[Aktion] Exportiere Settings...");
+      ret = ExportSettings(EXPORTFILENAME ".dat",      TAPFSROOT LOGDIR);
       ret = ExportSettings_Text(EXPORTFILENAME ".txt", TAPFSROOT LOGDIR) && ret;
-      ret = Appl_ExportChData("Settings.std")                            && ret;
-      if (ret) WriteLogCS(PROGRAM_NAME, "Export 'Settings.std' (System) erfolgreich.");
-      if (ret)
-        WriteLogCS(PROGRAM_NAME, "--> Export erfolgreich!");
-      else
-      {
-        WriteLogCS(PROGRAM_NAME, "--> Fehler beim Export!");
-        ShowErrorMessage("Fehler beim Export!\n\nBitte das Logfile prüfen...", NULL);
-      }
+      ret = HDD_ImExportChData("Settings.std",         TAPFSROOT LOGDIR, FALSE) && ret;
+      if (!ret)
+        ShowErrorMessage(LangGetString(LS_ExportError), NULL);
     }
   }
   else
@@ -161,15 +177,19 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
   // Behandlung offener MessageBoxen (rekursiver Aufruf, auch bei DoNotReenter)
   if(CSShowMessageBox)
   {
-    if(OSDMenuMessageBoxIsVisible())
+    if(OSDMenuMessageBoxIsVisible() || OSDMenuInfoBoxIsVisible())
     {
-//      #ifdef Calibri_10_FontDataUC
-        OSDMenuMessageBoxDoScrollOver(&event, &param1);
-//      #endif
+      if(OSDMenuMessageBoxIsVisible())
+      {
+        if(event == EVT_KEY) LastMessageBoxKey = param1;
+        #ifndef FBLIB_OLD
+          OSDMenuMessageBoxDoScrollOver(&event, &param1);
+        #endif
+      }
       OSDMenuEvent(&event, &param1, &param2);
     }
-    if(!OSDMenuMessageBoxIsVisible())
-      CSShowMessageBox = FALSE;
+    if(!OSDMenuMessageBoxIsVisible() && !OSDMenuInfoBoxIsVisible())
+     CSShowMessageBox = FALSE;
     param1 = 0;
   }
 
@@ -214,6 +234,59 @@ void WriteLogCSf(char *ProgramName, const char *format, ...)
   }
 }
 
+char SysTypeToStr(void)
+{
+  switch (GetSystemType())
+  {
+    case ST_TMSS:  return 'S';
+    case ST_TMSC:  return 'C';
+    case ST_TMST:  return 'T';
+    default:       return '?';
+  }
+}
+
+bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
+{
+  tDirEntry             FolderStruct;
+  char                  AbsFileName[FBLIB_DIR_SIZE]; //, TmpFileName[FBLIB_DIR_SIZE];
+  bool                  ret = FALSE;
+
+  TRACEENTER();
+  HDD_TAP_PushDir();
+  WriteLogCSf(PROGRAM_NAME, (Import ? "[Action] Importing '%s' (System)..." : "[Action] Exporting '%s' (System)..."), FileName);
+  WriteLogCS(PROGRAM_NAME, "----------------------------------------");
+
+  TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", &AbsDirectory[21], FileName);
+//  TAP_SPrint(TmpFileName, sizeof(TmpFileName), TAPFSROOT "/ProgramFiles/%s", FileName);
+//  rename(AbsFileName, TmpFileName); 
+
+  //Initialize the directory structure
+  memset(&FolderStruct, 0, sizeof(tDirEntry));
+  FolderStruct.Magic = 0xbacaed31;
+
+  //Save the current directory resources and change into our directory (current directory of the TAP)
+//  ApplHdd_SaveWorkFolder();
+//  if (!ApplHdd_SelectFolder(&FolderStruct, &AbsDirectory[1]))   //do not include the leading slash
+  {
+//    ApplHdd_SetWorkFolder(&FolderStruct);
+    if (Import)
+      ret = Appl_ImportChData(AbsFileName);
+    else
+      ret = Appl_ExportChData(AbsFileName);
+  }
+//  ApplHdd_RestoreWorkFolder();
+
+//  rename(TmpFileName, AbsFileName);
+  if (ret)
+    WriteLogCSf(PROGRAM_NAME, (Import ? "--> Import '%s' successful." : "--> Export '%s' successful."), AbsFileName);
+  else
+    WriteLogCSf(PROGRAM_NAME, (Import ? "--> Error during import '%s'!" : "--> Error during export '%s'!"), AbsFileName);
+  HDD_TAP_PopDir();
+
+  TRACEEXIT();
+  return ret;
+}
+
 void DebugServiceNames(char* FileName)
 {
   FILE *fOut = NULL;
@@ -221,7 +294,7 @@ void DebugServiceNames(char* FileName)
   char *p = NULL;
   TRACEENTER();
 
-  TAP_SPrint(fn, sizeof(fn), "%s%s/%s", TAPFSROOT, LOGDIR, FileName);
+  TAP_SPrint(fn, sizeof(fn), TAPFSROOT LOGDIR "/%s", FileName);
   fOut = fopen(fn, "wb");
   p = (char*)(FIS_vFlashBlockServiceName());
   if(p && fOut)
@@ -236,54 +309,56 @@ void DebugServiceNames(char* FileName)
 // ----------------------------------------------------------------------------
 //                           MessageBox-Funktionen
 // ----------------------------------------------------------------------------
-#define STDSTRINGSIZE   256
-#define MAXMBBUTTONS    5
+#ifndef FBLIB_OLD
+  #define STDSTRINGSIZE   256
+  #define MAXMBBUTTONS    5
 
-typedef struct
-{
-  dword                 NrButtons;
-  dword                 CurrentButton;
-  char                  Button[MAXMBBUTTONS][STDSTRINGSIZE];
-  char                  Title[STDSTRINGSIZE];
-  char                  Text[STDSTRINGSIZE];
+  typedef struct
+  {
+    dword                 NrButtons;
+    dword                 CurrentButton;
+    char                  Button[MAXMBBUTTONS][STDSTRINGSIZE];
+    char                  Title[STDSTRINGSIZE];
+    char                  Text[STDSTRINGSIZE];
 //    tFontData            *FontColorPickerTitle;
 //    tFontData            *FontColorPickerCursor;
-} tMessageBox;
+  } tMessageBox;
 
-extern tMessageBox      MessageBox;
-bool                    MessageBoxAllowScrollOver = FALSE;
+  extern tMessageBox      MessageBox;
+  bool                    MessageBoxAllowScrollOver = FALSE;
 
-void  OSDMenuMessageBoxAllowScrollOver()
-{
-  MessageBoxAllowScrollOver = TRUE;
-}
-
-void OSDMenuMessageBoxDoScrollOver(word *event, dword *param1)
-{
-  TRACEENTER();
-  if(MessageBoxAllowScrollOver)
+  void  OSDMenuMessageBoxAllowScrollOver()
   {
-    if ((*event == EVT_KEY) && (*param1 == RKEY_Left))
-    {
-      if(MessageBox.CurrentButton == 0)
-      {
-        MessageBox.CurrentButton = MessageBox.NrButtons - 1;
-        OSDMenuMessageBoxShow();
-        *param1 = 0;
-      }
-    }
-    if ((*event == EVT_KEY) && (*param1 == RKEY_Right))
-    {  
-      if(MessageBox.CurrentButton >= (MessageBox.NrButtons - 1))
-      {
-        MessageBox.CurrentButton = 0;
-        OSDMenuMessageBoxShow();
-        *param1 = 0;
-      }
-    }
+    MessageBoxAllowScrollOver = TRUE;
   }
-  TRACEEXIT();
-}
+
+  void OSDMenuMessageBoxDoScrollOver(word *event, dword *param1)
+  {
+    TRACEENTER();
+    if(MessageBoxAllowScrollOver && (MessageBox.NrButtons > 1))
+    {
+      if ((*event == EVT_KEY) && (*param1 == RKEY_Left))
+      {
+        if(MessageBox.CurrentButton == 0)
+        {
+          MessageBox.CurrentButton = MessageBox.NrButtons - 1;
+          OSDMenuMessageBoxShow();
+          *param1 = 0;
+        }
+      }
+      if ((*event == EVT_KEY) && (*param1 == RKEY_Right))
+      {  
+        if(MessageBox.CurrentButton >= (MessageBox.NrButtons - 1))
+        {
+          MessageBox.CurrentButton = 0;
+          OSDMenuMessageBoxShow();
+          *param1 = 0;
+        }
+      }
+    }
+    TRACEEXIT();
+  }
+#endif
 
 // Die Funktionen zeigt eine Bestätigungsfrage (Import/Überschreiben/Abbrechen) an, und wartet auf die Bestätigung des Benutzers.
 // Nach Beendigung der Message kehrt das TAP in den Normal-Mode zurück, FALLS dieser zuvor aktiv war.
@@ -301,9 +376,9 @@ int ShowConfirmationDialog(char *MessageStr)
 //  OSDMenuSaveMyRegion(rgnSegmentList);
   OSDMenuMessageBoxDoNotEnterNormalMode(TRUE);
   OSDMenuMessageBoxAllowScrollOver();
-  OSDMenuMessageBoxButtonAdd("Importieren");
-  OSDMenuMessageBoxButtonAdd("Überschreiben");
-  OSDMenuMessageBoxButtonAdd("Abbrechen");
+  OSDMenuMessageBoxButtonAdd(LangGetString(LS_AnswerImport));
+  OSDMenuMessageBoxButtonAdd(LangGetString(LS_AnswerOverwrite));
+  OSDMenuMessageBoxButtonAdd(LangGetString(LS_AnswerCancel));
   OSDMenuMessageBoxButtonSelect(2);
   OSDMenuMessageBoxShow();
   CSShowMessageBox = TRUE;
@@ -367,8 +442,8 @@ void LoadINI(void)
   IniFileState = INIOpenFile(INIFILENAME, PROGRAM_NAME);
   if((IniFileState != INILOCATION_NotFound) && (IniFileState != INILOCATION_NewFile))
   {
-    ImportFormat        =          INIGetInt("ImportFormat",               1,   0,    2);   // 0 - Binary, 1 - Text, 2 - System
-    OverwriteSatellites =          INIGetInt("OverwriteSatellites",        0,   0,    1)   ==   1;
+    ImportFormat        = INIGetInt("ImportFormat",        1, 0, 2);   // 0 - Binary, 1 - Text, 2 - System
+    OverwriteSatellites = INIGetInt("OverwriteSatellites", 0, 0, 1)  ==  1;
   }
   INICloseFile();
 
@@ -426,7 +501,7 @@ bool InitSystemType(void)
       break;
 
     default:
-      WriteLogCSf(PROGRAM_NAME, "Nicht unterstütztes System: %d!", CurSystemType);
+      WriteLogCSf(PROGRAM_NAME, "Unsupported system type: %d!", CurSystemType);
       ret = FALSE;
       break;
   }
@@ -452,7 +527,7 @@ bool InitSystemType(void)
   return ret;
 }
 
-int GetLengthOfServiceNames(void)
+int GetLengthOfServiceNames(int *NrServiceNames)
 {
   TRACEENTER();
   int Result = 0;
@@ -461,6 +536,7 @@ int GetLengthOfServiceNames(void)
   p1 = (char*)(FIS_vFlashBlockServiceName());
   p2 = (char*)(FIS_vFlashBlockProviderInfo());
 
+  if(NrServiceNames) *NrServiceNames = 0;
   if(p1)
   {
     Result = SERVICENAMESLENGTH;
@@ -469,10 +545,14 @@ int GetLengthOfServiceNames(void)
 
     for (i = 0; i < Result-1; i++)
     {
-      if (!p1[i] && !p1[i+1])
+      if (!p1[i])
       {
-        Result = i+1;
-        break;
+        if (NrServiceNames) *NrServiceNames = *NrServiceNames + 1;
+        if (!p1[i+1])
+        {
+          Result = i+1;
+          break;
+        }
       }
     }
   }
@@ -505,58 +585,47 @@ void DeleteServiceNames(void)
   Appl_DeleteTvSvcName    = (void*)FIS_fwAppl_DeleteTvSvcName();
   Appl_DeleteRadioSvcName = (void*)FIS_fwAppl_DeleteRadioSvcName();
 
-  TYPE_Service_TMSx         *p;
-  int nTVServices, nRadioServices, i;
+//  TYPE_Service_TMSx    *p;
+  int                   nTVServices, nRadioServices, i;
   TAP_Channel_GetTotalNum(&nTVServices, &nRadioServices);
 
   WriteLogCS(PROGRAM_NAME, "DeleteServiceNames()");
-//  DebugServiceNames("vorher.dat");
+  DebugServiceNames("vorher.dat");
 //  char tmp[512];
   for (i = (nRadioServices - 1); i >= 0; i--)
   {
-    if ((i == 0) && (nRadioServices > 1))
-    {
-      p = (TYPE_Service_TMSx*)(FIS_vFlashBlockRadioServices());
-      p[1].NameOffset = p[0].NameOffset;
-      Appl_DeleteRadioSvcName(1, FALSE);
-    }
-    else
-      Appl_DeleteRadioSvcName(i, FALSE);
-//    TAP_SPrint(tmp, "Rad%ld.dat", i);
+    Appl_DeleteRadioSvcName(i, FALSE);
+//    TAP_SPrint(tmp, sizeof(tmp), "Rad%d.dat", i);
 //    DebugServiceNames(tmp);
   }
+
+//  Appl_DeleteTvSvcName(0, TRUE);  // BUG: egal, was man tut - der Eintrag in 0 wird niemals gelöscht :-(
   for (i = (nTVServices - 1); i >= 0; i--)
   {
-/*    if ((i == 0) && (nTVServices > 1))
-    {
-      p = (TYPE_Service_TMSx*)(FIS_vFlashBlockTVServices());
-      p[1].NameOffset = p[0].NameOffset;
-      Appl_DeleteTvSvcName(1, FALSE);
-    }
-    else  */
-      Appl_DeleteTvSvcName(i, TRUE);
-//    TAP_SPrint(tmp, "TV%ld.dat", i);
+    Appl_DeleteTvSvcName(i, FALSE);
+//    TAP_SPrint(tmp, sizeof(tmp), "TV%d.dat", i);
 //    DebugServiceNames(tmp);
   }
-//  DebugServiceNames("nachher.dat");
+
+  DebugServiceNames("nachher.dat");
   TRACEEXIT();
 }
 
-bool DeleteAllSettings(void)
+bool DeleteAllSettings(bool OverwriteSatellites)
 {
   TRACEENTER();
   bool ret = TRUE;
 
-  WriteLogCS(PROGRAM_NAME, "DeleteAllSettings()");
+  WriteLogCS(PROGRAM_NAME, "[Action] Deleting all settings...");
+  WriteLogCS(PROGRAM_NAME, "----------------------------------------");
+  DeleteTimers();
   {
-    // Favourites
+    // Favorites
     char                 *p;
     p = (char*) FIS_vFlashBlockFavoriteGroup();
 
     if (p)
-    {
       memset(p, 0, NrFavGroups * SIZE_Favorites);
-    }
     else ret = FALSE;
   }
 
@@ -565,10 +634,12 @@ bool DeleteAllSettings(void)
     char                 *p1, *p2;
 
     DeleteServiceNames();
-//    p1 = (char*)(FIS_vFlashBlockServiceName());
-//    p2 = (char*)(FIS_vFlashBlockProviderInfo());
-//    if(p1 && p2 && (p2 > p1))
-//      memset(p, 0, min(p2 - p1, SERVICENAMESLENGTH));
+    #ifndef FULLDEBUG
+      p1 = (char*)(FIS_vFlashBlockServiceName());
+      p2 = (char*)(FIS_vFlashBlockProviderInfo());
+      if(p1 && p2 && (p2 > p1))
+        memset(p, 0, min(p2 - p1, SERVICENAMESLENGTH));
+    #endif
   }
 
   {
@@ -576,7 +647,7 @@ bool DeleteAllSettings(void)
     char                 *p;
 
     p = (char*)(FIS_vFlashBlockProviderInfo());
-    if(p)
+    if(ret && p)
       memset(p, 0, PROVIDERNAMELENGTH * NRPROVIDERNAMES);
   }
 
@@ -588,7 +659,7 @@ bool DeleteAllSettings(void)
 
     p    = (TYPE_Service_TMSS*)(FIS_vFlashBlockTVServices());
     nSvc = (word*)FIS_vnTvSvc();
-    if (p && nSvc)
+    if (ret && p && nSvc)
     {
       nServices = *nSvc;
       *nSvc = 0;
@@ -598,7 +669,7 @@ bool DeleteAllSettings(void)
     // Radio Services
     p    = (TYPE_Service_TMSS*)(FIS_vFlashBlockRadioServices());
     nSvc = (word*)FIS_vnRadioSvc();
-    if (p && nSvc)
+    if (ret && p && nSvc)
     {
       nServices = *nSvc;
       *nSvc = 0;
@@ -614,7 +685,7 @@ bool DeleteAllSettings(void)
     dword             NrTransponders;
           
     p = (TYPE_TpInfo_TMSS*)(FIS_vFlashBlockTransponderInfo());
-    if (p)
+    if (ret && p)
     {
       pNrTransponders = (dword*)(p) - 1;
       NrTransponders = *pNrTransponders;
@@ -629,12 +700,10 @@ bool DeleteAllSettings(void)
     int   i;
     byte *p;
     p = (byte*)FIS_vFlashBlockSatInfo();
-    if (p)
+    if (ret && p)
     {
       if (OverwriteSatellites)
-      {
         memset(p, 0, FlashSatTablesGetTotal() * SIZE_SatInfo_TMSx);
-      }
       else
       {
         // Wenn ohne SAT:
@@ -649,6 +718,7 @@ bool DeleteAllSettings(void)
     else ret = FALSE;
   }
 
+  if(!ret) WriteLogCS(PROGRAM_NAME, "Error while deleting old settings!");
   TRACEEXIT();
   return ret;
 }

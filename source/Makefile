@@ -1,4 +1,4 @@
-APP1 = ChannelListTAP
+APP1 = ChannelListSaver
 BASE = $(shell cd /tapapi/TMS; pwd)
 CUR_DIR = $(shell pwd)
 

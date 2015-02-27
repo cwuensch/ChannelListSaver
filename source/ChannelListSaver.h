@@ -7,7 +7,8 @@
 #define VERSION               "V0.4"
 #define TAPID                 0x2A0A0002
 #define AUTHOR                "chris86"
-#define DESCRIPTION           "Im-/Export of Satellites-, Transponder-, Service- & Favorites-List"
+//#define DESCRIPTION           "Im-/Export of Sat-, Transponder- & Channel-Lists"
+#define DESCRIPTION           "Im-/Export of Sat, Transponders, Channels & Favs."
 
 #define LOGDIR                "/ProgramFiles/Settings/" PROGRAM_NAME
 #define LNGFILENAME           PROGRAM_NAME ".lng"
@@ -21,6 +22,7 @@
 #define NRPROVIDERNAMES       256
 #define SERVICENAMESLENGTH    39996    // 40000 / 40004 / 39996 ***  ?
 
+#define STACKTRACE            TRUE
 
 typedef struct
 {
@@ -79,6 +81,8 @@ dword TAP_EventHandler(word event, dword param1, dword param2);
 
 void  WriteLogCS(char *ProgramName, char *s);
 void  WriteLogCSf(char *ProgramName, const char *format, ...);
+char  SysTypeToStr(void);
+bool  HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import);
 
 int   ShowConfirmationDialog(char *MessageStr);
 void  ShowErrorMessage(char *MessageStr, char *TitleStr);
@@ -87,9 +91,9 @@ void  LoadINI(void);
 void  SaveINI(void);
 
 bool  InitSystemType(void);
-int   GetLengthOfServiceNames(void);
+int  GetLengthOfServiceNames(int *NrServiceNames);
 bool  DeleteTimers(void);
 void  DeleteServiceNames(void);
-bool  DeleteAllSettings(void);
+bool  DeleteAllSettings(bool OverwriteSatellites);
 
 #endif

@@ -12,9 +12,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\source\ChannelListTAP.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="..\source\FlashSatTablesSetInfo.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -24,11 +21,11 @@
     <ClInclude Include="..\source\ImExportText.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="..\source\ChannelListSaver.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\source\ChannelListTAP.c">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="..\source\FlashSatTablesSetInfo.c">
       <Filter>Quelldateien</Filter>
     </ClCompile>
@@ -36,6 +33,9 @@
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="..\source\ImExportText.c">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="..\source\ChannelListSaver.c">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
@@ -47,6 +47,9 @@
       <Filter>Ressourcendateien</Filter>
     </None>
     <None Include="..\source\build_TMS.bat">
+      <Filter>Ressourcendateien</Filter>
+    </None>
+    <None Include="..\ChannelListSaver.lng">
       <Filter>Ressourcendateien</Filter>
     </None>
   </ItemGroup>

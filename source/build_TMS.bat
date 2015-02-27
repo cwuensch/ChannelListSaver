@@ -19,6 +19,6 @@ if not "%1"=="/quiet" (
   )
 )
 if "%BuildState%"=="0" (
-  move /y ChannelListTAP.tap ..\ChannelListTAP.tap
+  move /y ChannelListSaver.tap ..\ChannelListSaver.tap
 )
 exit %BuildState%

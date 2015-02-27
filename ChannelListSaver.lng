@@ -23,9 +23,19 @@
 
 
 #Deutsch
-de_000=SystemType ist unbekannt.\n\nBitte die FirmwareTMS.dat überprüfen!
+de_000=SystemType ist unbekannt.\nBitte die FirmwareTMS.dat überprüfen!
+de_001=System-Backup '%s' gefunden.\nSoll diese nun importiert werden?
+de_002=Binär-Datei '%s' gefunden.\nSoll diese nun importiert werden?
+de_003=Text-Datei '%s' gefunden.\nSoll diese nun importiert werden?
+de_004=Import
+de_005=Ersetzen
+de_006=Abbruch
+de_007=Einstellungen (binär) importiert.
+de_008=Einstellungen (Text) importiert.
+de_009=Fehler beim Import!\nBitte das Logfile prüfen...
+de_010=Einstellungen erfolgreich exportiert.
+de_011=Fehler beim Export!\nBitte das Logfile prüfen...
 
 
 #English
-en_000=Unknown SystemType.\n\nPlease check FirmwareTMS.dat!
-
+en_000=Unknown SystemType.\nPlease check FirmwareTMS.dat!
