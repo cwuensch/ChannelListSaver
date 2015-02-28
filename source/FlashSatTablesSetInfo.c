@@ -6,6 +6,7 @@
 bool FlashSatTablesEncode_ST_TMSS(TYPE_SatInfo_TMSS *Data, tFlashSatTable *SatTable, bool ResetNrTransponders)
 {
   TRACEENTER();
+  word NrTransponders;
   int i;
 
   if(!Data || !SatTable)
@@ -14,15 +15,15 @@ bool FlashSatTablesEncode_ST_TMSS(TYPE_SatInfo_TMSS *Data, tFlashSatTable *SatTa
     return FALSE;
   }
 
-  SatTable->NrOfTransponders = (ResetNrTransponders) ? 0 : Data->NrOfTransponders;
+  NrTransponders = (ResetNrTransponders) ? 0 : Data->NrOfTransponders;
 
   memset(Data, 0, sizeof(TYPE_SatInfo_TMSS));
-  Data->NrOfTransponders       = SatTable->NrOfTransponders;
+  Data->NrOfTransponders       = NrTransponders;
   Data->unused1                = SatTable->unused1;
   Data->SatPosition            = SatTable->SatPosition;
   memcpy(Data->unknown1,         SatTable->unknown1, 22);
   memcpy(Data->unused2,          SatTable->unused2, 8);
-  strncpy(Data->SatName,         SatTable->SatName, MAX_SatName-1);
+  strncpy(Data->SatName,         SatTable->SatName, MAX_SatName);
 
   //LNBs
   for (i = 0; i <= 1; i++)
@@ -58,8 +59,8 @@ bool FlashSatTablesEncode_ST_TMST(TYPE_SatInfo_TMST *Data, tFlashSatTable *SatTa
     return FALSE;
   }
 
-  strncpy(Data->SatName, SatTable->SatName, MAX_SatName - 1);
-  Data->SatName[MAX_SatName-1] = '\0';
+  strncpy(Data->SatName, SatTable->SatName, MAX_SatName);
+//  Data->SatName[MAX_SatName - 1] = '\0';
   if (ResetNrTransponders)
     Data->NrOfTransponders = 0;
 
