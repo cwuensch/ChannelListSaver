@@ -654,7 +654,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
             p = 0;
 
             // Nr; SatName; SatPosition; NrTransponders;
-            ret = (sscanf(Buffer, "%*i ; %15[^;\r\n] ; %hi ; %hi ; %n",
+            ret = (sscanf(Buffer, "%*i ; %16[^;\r\n] ; %hi ; %hi ; %n",
                                    CurSat.SatName, &CurSat.SatPosition, &CurSat.NrOfTransponders, &BytesRead) == 3) && ret;
             p += BytesRead;
             RTrim(CurSat.SatName);
@@ -760,9 +760,9 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
 
           memset(&CurService, 0, sizeof(tFlashService));
 
-          ret = (sscanf(Buffer, "%*i ; %22[^;\r\n] ; %hhi ; %hi ; %hhi ; "                         // Nr; ServiceName; SatIndex; TransponderIndex; Tuner;
+          ret = (sscanf(Buffer, "%*i ; %23[^;\r\n] ; %hhi ; %hi ; %hhi ; "                         // Nr; ServiceName; SatIndex; TransponderIndex; Tuner;
                                 "%8[^;\r\n] ; %8[^;\r\n] ; %hi ; %hi ; %hi ; %hi ; %hi ; "         // VideoStreamType; AudioStreamType; ServiceID; PMTPID; PCRPID; VideoPID; AudioPID;
-                                "%hi ; %c ; %c ; %c ; %c ; %c ; %hi ; %18[^;\r\n] ; %39[^;\r\n]",  // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
+                                "%hi ; %c ; %c ; %c ; %c ; %c ; %hi ; %18[^;\r\n] ; %21[^;\r\n]",  // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
                                   CurService.ServiceName, &CurService.SatIndex, &CurService.TransponderIndex, &CurService.Tuner,
                                   StringBuf1, StringBuf2, &CurService.ServiceID, &CurService.PMTPID, &CurService.PCRPID, &CurService.VideoPID, &CurService.AudioPID,
                                   &CurService.LCN, &CharFlagDel, &CharFlagCAS, &CharFlagLock, &CharFlagSkip, &CharNameLock, &CurService.Flags2, StringBuf3, CurService.ProviderName) >= 19) && ret;  // Wenn ProviderName empty -> wird korrekt auf 0xFFFF gesetzt
