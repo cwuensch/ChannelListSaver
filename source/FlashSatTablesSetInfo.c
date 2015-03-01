@@ -23,7 +23,7 @@ bool FlashSatTablesEncode_ST_TMSS(TYPE_SatInfo_TMSS *Data, tFlashSatTable *SatTa
   Data->SatPosition            = SatTable->SatPosition;
   memcpy(Data->unknown1,         SatTable->unknown1, 22);
   memcpy(Data->unused2,          SatTable->unused2, 8);
-  strncpy(Data->SatName,         SatTable->SatName, MAX_SatName);
+  strncpy(Data->SatName,         SatTable->SatName, MAX_SatName - 1);
 
   //LNBs
   for (i = 0; i <= 1; i++)
@@ -59,8 +59,8 @@ bool FlashSatTablesEncode_ST_TMST(TYPE_SatInfo_TMST *Data, tFlashSatTable *SatTa
     return FALSE;
   }
 
-  strncpy(Data->SatName, SatTable->SatName, MAX_SatName);
-//  Data->SatName[MAX_SatName - 1] = '\0';
+  strncpy(Data->SatName, SatTable->SatName, MAX_SatName - 1);
+  Data->SatName[MAX_SatName - 1] = '\0';
   if (ResetNrTransponders)
     Data->NrOfTransponders = 0;
 

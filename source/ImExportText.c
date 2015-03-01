@@ -311,15 +311,15 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
 
       ret = (fprintf(fExportFile, "[Satellites]" CRLF)                   > 0) && ret;
 //      ret = (fprintf(fExportFile, "#Nr; SatName;          SatPos; NrTps; LNB1Supply; LNB1DiSEqC10; LNB1DiSEqC11; LNB1DiSeqC12; LNB1DiSEqC12Flags; LNB1Universal; LNB1Switch22; LNB1LowBand; LNB1HBFrq; LNB1Loop; LNB1Unused1; LNB1Unused2; LNB1Unused3; LNB1Unused4; LNB1Unused5; LNB2Supply; LNB2DiSEqC10; LNB2DiSEqC11; LNB2DiSeqC12; LNB2DiSEqC12Flags; LNB2Universal; LNB2Switch22; LNB2LowBand; LNB2HBFrq; LNB2Loop; LNB2Unused1; LNB2Unused2; LNB2Unused3; LNB2Unused4; LNB2Unused5; Unused1; Unknown1; Unused2" CRLF) > 0) && ret;
-      ret = (fprintf(fExportFile, "#  ;                  ;       ;      ;    Supply;;      DiSEqC10;;    DiSEqC11;;    DiSeqC12;;    DiSEqC12Flags;;      Universal;;    Switch22;;     LowBand;;        HBFrq;;    LoopThrough;;   Unused1;;     Unused2;;     Unused3;;     Unused4;;                    Unused5;;                ;                                                                   ;" CRLF) > 0) && ret;
-      ret = (fprintf(fExportFile, "#Nr; SatName          ; SatPos; NrTps;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;      LNB1; LNB2;       LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;             LNB1;           LNB2;   Unused1;  Unknown1                                                         ;  Unused2" CRLF) > 0) && ret;
+      ret = (fprintf(fExportFile, "#  ;                 ;       ;      ;    Supply;;      DiSEqC10;;    DiSEqC11;;    DiSeqC12;;    DiSEqC12Flags;;      Universal;;    Switch22;;     LowBand;;        HBFrq;;    LoopThrough;;   Unused1;;     Unused2;;     Unused3;;     Unused4;;                    Unused5;;                ;                                                                   ;" CRLF) > 0) && ret;
+      ret = (fprintf(fExportFile, "#Nr; SatName         ; SatPos; NrTps;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;      LNB1; LNB2;       LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;             LNB1;           LNB2;   Unused1;  Unknown1                                                         ;  Unused2" CRLF) > 0) && ret;
 
       for(i = 0; i < FileHeader.NrSatellites; i++)
       {
         if (FlashSatTablesGetInfo(i, &CurSat))
         {
           // Nr; SatName; SatPosition; NrTransponders;
-          ret = (fprintf(fExportFile, "%3d; %-17s;  %5hu; %5hu;   ",
+          ret = (fprintf(fExportFile, "%3d; %-16s;  %5hu; %5hu;   ",
                                        i, CurSat.SatName, CurSat.SatPosition, CurSat.NrOfTransponders) > 0) && ret;
 /*          for (j = 0; j <= 1; j++)
           {
@@ -654,7 +654,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
             p = 0;
 
             // Nr; SatName; SatPosition; NrTransponders;
-            ret = (sscanf(Buffer, "%*i ; %16[^;\r\n] ; %hi ; %hi ; %n",
+            ret = (sscanf(Buffer, "%*i ; %15[^;\r\n] ; %hi ; %hi ; %n",
                                    CurSat.SatName, &CurSat.SatPosition, &CurSat.NrOfTransponders, &BytesRead) == 3) && ret;
             p += BytesRead;
             RTrim(CurSat.SatName);
@@ -749,8 +749,8 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
         }
 
         //[Services]
-        //#Nr;  ServiceName            ; SatIdx; TrpIdx; Tuner; VideoType; AudioType;  SvcID; PMTPID; PCRPID; VidPID; AudPID;   LCN; FDel; FCAS; FLock; FSkip; NameLck; Flags2; Unknown2;           ProviderName
-        //   0; Das Erste              ;      1;     44;     3;     MPEG2;     MPEG1;  28106;    100;    101;    101;  32870;     0;    n;    n;     n;     n;       n;    0x1; 00 00 00 00 DC DD;  ARD
+        //#Nr;  ServiceName             ; SatIdx; TrpIdx; Tuner; VideoType; AudioType;  SvcID; PMTPID; PCRPID; VidPID; AudPID;   LCN; FDel; FCAS; FLock; FSkip; NameLck; Flags2; Unknown2;           ProviderName
+        //   0; Das Erste               ;      1;     44;     3;     MPEG2;     MPEG1;  28106;    100;    101;    101;  32870;     0;    n;    n;     n;     n;       n;    0x1; 00 00 00 00 DC DD;  ARD
         case SM_TVServices:
         case SM_RadioServices:
         {
@@ -762,7 +762,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
 
           ret = (sscanf(Buffer, "%*i ; %23[^;\r\n] ; %hhi ; %hi ; %hhi ; "                         // Nr; ServiceName; SatIndex; TransponderIndex; Tuner;
                                 "%8[^;\r\n] ; %8[^;\r\n] ; %hi ; %hi ; %hi ; %hi ; %hi ; "         // VideoStreamType; AudioStreamType; ServiceID; PMTPID; PCRPID; VideoPID; AudioPID;
-                                "%hi ; %c ; %c ; %c ; %c ; %c ; %hi ; %18[^;\r\n] ; %21[^;\r\n]",  // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
+                                "%hi ; %c ; %c ; %c ; %c ; %c ; %hi ; %18[^;\r\n] ; %20[^;\r\n]",  // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
                                   CurService.ServiceName, &CurService.SatIndex, &CurService.TransponderIndex, &CurService.Tuner,
                                   StringBuf1, StringBuf2, &CurService.ServiceID, &CurService.PMTPID, &CurService.PCRPID, &CurService.VideoPID, &CurService.AudioPID,
                                   &CurService.LCN, &CharFlagDel, &CharFlagCAS, &CharFlagLock, &CharFlagSkip, &CharNameLock, &CurService.Flags2, StringBuf3, CurService.ProviderName) >= 19) && ret;  // Wenn ProviderName empty -> wird korrekt auf 0xFFFF gesetzt

@@ -153,6 +153,23 @@ int TAP_Main(void)
     if (Answer == 2)
     {
 //      WriteLogCS(PROGRAM_NAME, "[Aktion] Exportiere Settings...");
+
+// channel mit langem service & providername adden
+// -> nachsehen, ob die strings mit 0 terminiert werden / wie lang sie maximal eingefügt werden  
+  char *(*Appl_AddSvcName)(char const*);
+  word  (*Appl_SetProviderName)(char const*);
+
+  TYPE_Service_TMSx *p = (TYPE_Service_TMSx*) FIS_vFlashBlockTVServices();
+  word           *nSvc = (word*) FIS_vnTvSvc();
+
+  Appl_AddSvcName = (void*)FIS_fwAppl_AddSvcName();
+  if(Appl_AddSvcName) p[*nSvc-1].NameOffset = (dword)Appl_AddSvcName("ServiceNam12345678901234567890");
+
+  //Update the provider name
+  Appl_SetProviderName = (void*)FIS_fwAppl_SetProviderName();
+  if(Appl_SetProviderName) p[*nSvc-1].ProviderIdx = Appl_SetProviderName("ProviderNa123456789012345");
+
+
       ret = ExportSettings(EXPORTFILENAME ".dat",      TAPFSROOT LOGDIR);
       ret = ExportSettings_Text(EXPORTFILENAME ".txt", TAPFSROOT LOGDIR) && ret;
       ret = HDD_ImExportChData("Settings.std",         TAPFSROOT LOGDIR, FALSE) && ret;
