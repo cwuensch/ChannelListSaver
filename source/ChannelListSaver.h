@@ -22,7 +22,6 @@
 #define NRPROVIDERNAMES       256
 #define SERVICENAMESLENGTH    39996    // 40000 / 40004 / 39996 ***  ?
 
-#define STACKTRACE            TRUE
 
 typedef struct
 {

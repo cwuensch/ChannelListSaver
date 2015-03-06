@@ -5,6 +5,7 @@
 #endif
 
 #define _GNU_SOURCE
+//#define  STACKTRACE     TRUE
 #include                <string.h>
 #include                <stdio.h>
 #include                <tap.h>
@@ -232,23 +233,39 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
           ret = TRUE;
 
           // Now write the data blocks from the file to the RAM
-          if (OverwriteSatellites)
-          {
-            // [Satellites]
-            TYPE_SatInfo_TMSS *p;
+          // [Satellites]
+          TYPE_SatInfo_TMSS *p;
 
-            p = (TYPE_SatInfo_TMSS*)FIS_vFlashBlockSatInfo();
-            if (ret && p)
+          p = (TYPE_SatInfo_TMSS*)FIS_vFlashBlockSatInfo();
+          if (ret && p)
+          {
+            if (OverwriteSatellites)
             {
               memcpy(p, Buffer + FileHeader.SatellitesOffset, FileHeader.NrSatellites * SIZE_SatInfo_TMSx);
               NrImpSatellites = FileHeader.NrSatellites;
             }
             else
-              ret = FALSE;
+            {
+              tFlashSatTable CurSat, IstSat;
+              NrImpSatellites = FlashSatTablesGetTotal();
+
+              for (i = 0; i < FileHeader.NrSatellites; i++)
+              {
+                FlashSatTablesDecode(Buffer + FileHeader.SatellitesOffset + i * SIZE_SatInfo_TMSx, &CurSat);
+                if (i < NrImpSatellites)
+                {
+                  FlashSatTablesDecode(p + i * SIZE_SatInfo_TMSx, &IstSat);
+                  if ((IstSat.SatPosition != CurSat.SatPosition) || (strcmp(IstSat.SatName, CurSat.SatName) != 0))
+                    WriteLogCSf(PROGRAM_NAME, "Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", i, CurSat.SatName, IstSat.SatName);
+                }
+                else
+                  WriteLogCSf(PROGRAM_NAME, "Warning: Satellite nr. %d ('%s') not found in receiver!", i, CurSat.SatName);
+              }
+            }
           }
-          WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Satellites imported." : "Satellites error!", NrImpSatellites, FileHeader.NrSatellites);
-          if (!OverwriteSatellites)
-            NrImpSatellites = FlashSatTablesGetTotal();
+          else
+            ret = FALSE;
+          WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Satellites imported." : "Satellites error!", (OverwriteSatellites ? NrImpSatellites : 0), FileHeader.NrSatellites);
 
           {
             // [Transponders]
@@ -260,7 +277,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
             NrTransponders = (dword*)(p) - 1;
             if (ret && p)
             {
-              TAP_PrintNet("NrTransponders = %lu \n", *NrTransponders);
+//              TAP_PrintNet("NrTransponders = %lu \n", *NrTransponders);
               memcpy(p, Buffer + FileHeader.TranspondersOffset, FileHeader.NrTransponders * SIZE_TpInfo_TMSx);
               *NrTransponders = FileHeader.NrTransponders;
 
@@ -354,7 +371,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
                 NrImpTVServices = *nSvc;
               else
                 NrImpRadioServices = *nSvc;
-              TAP_PrintNet("NrServices = %u \n", *nSvc);
+//              TAP_PrintNet("NrServices = %u \n", *nSvc);
             }
             else
               ret = FALSE;

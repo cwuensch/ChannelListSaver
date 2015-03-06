@@ -21,16 +21,16 @@ bool StrToByteArr(byte *outArr, char *inStr, int length);
 char BoolToChar(bool inValue);
 bool CharToBool(char inValue);
 
-char* FECtoStr(char *outStr, byte inFEC);
+char* FECtoStr(byte inFEC);
 byte StrToFEC(char *inStr);
 
-char* ModulationToStr(char *outStr, byte inMod);
+char* ModulationToStr(byte inMod);
 byte StrToModulation(char *inStr);
 
-char* VideoTypeToStr(char *outStr, byte inVideo);
+char* VideoTypeToStr(byte inVideo);
 byte StrToVideoType(char *inStr);
 
-char* AudioTypeToStr(char *outStr, word inAudio);
+char* AudioTypeToStr(word inAudio);
 word StrToAudioType(char *inStr);
 
 bool ExportSettings_Text(char *FileName, char *AbsDirectory);
