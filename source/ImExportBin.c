@@ -192,7 +192,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
 }
 
 
-bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites)
+bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)  // 0: nie, 1: auto, 2: immer
 {
   tExportHeader         FileHeader;
   FILE                 *fImportFile = NULL;
@@ -200,7 +200,6 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
   char                  AbsFileName[FBLIB_DIR_SIZE];
   unsigned long         fs;
   int                   NrImpSatellites=0, NrImpTransponders=0, NrImpTVServices=0, NrImpRadioServices=0, NrImpFavGroups=0;
-  int                   i, j, k;
   bool                  ret = FALSE;
 
   TRACEENTER();
@@ -236,19 +235,17 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
           // [Satellites]
           TYPE_SatInfo_TMSS *p;
 
+// FRAGE: Lieber die Satellites- und Transponders einzeln oder als Block einspielen? -> v.a. bei auto wichtig. Und dann eigene Zählung!
+
           p = (TYPE_SatInfo_TMSS*)FIS_vFlashBlockSatInfo();
           if (ret && p)
           {
-            if (OverwriteSatellites)
-            {
-              memcpy(p, Buffer + FileHeader.SatellitesOffset, FileHeader.NrSatellites * SIZE_SatInfo_TMSx);
-              NrImpSatellites = FileHeader.NrSatellites;
-            }
-            else
+            if (OverwriteSatellites != 2)  // auto oder nie
             {
               tFlashSatTable CurSat, IstSat;
-              NrImpSatellites = FlashSatTablesGetTotal();
+              int i = 0;
 
+              NrImpSatellites = FlashSatTablesGetTotal();
               for (i = 0; i < FileHeader.NrSatellites; i++)
               {
                 FlashSatTablesDecode(Buffer + FileHeader.SatellitesOffset + i * SIZE_SatInfo_TMSx, &CurSat);
@@ -257,15 +254,25 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
                   FlashSatTablesDecode(p + i * SIZE_SatInfo_TMSx, &IstSat);
                   if ((IstSat.SatPosition != CurSat.SatPosition) || (strcmp(IstSat.SatName, CurSat.SatName) != 0))
                     WriteLogCSf(PROGRAM_NAME, "Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", i, CurSat.SatName, IstSat.SatName);
+                  if (OverwriteSatellites) OverwriteSatellites = 2;
                 }
                 else
+                {
                   WriteLogCSf(PROGRAM_NAME, "Warning: Satellite nr. %d ('%s') not found in receiver!", i, CurSat.SatName);
+                  if (OverwriteSatellites) OverwriteSatellites = 2;
+                  else ret = FALSE;
+                }
               }
+            }
+            if (OverwriteSatellites == 2)
+            {
+              memcpy(p, Buffer + FileHeader.SatellitesOffset, FileHeader.NrSatellites * SIZE_SatInfo_TMSx);
+              NrImpSatellites = FileHeader.NrSatellites;
             }
           }
           else
             ret = FALSE;
-          WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Satellites imported." : "Satellites error!", (OverwriteSatellites ? NrImpSatellites : 0), FileHeader.NrSatellites);
+          WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Satellites imported." : "Satellites error!", ((OverwriteSatellites==2) ? NrImpSatellites : 0), FileHeader.NrSatellites);
 
           {
             // [Transponders]
@@ -283,9 +290,10 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
 
               // Wenn ohne SAT:
               // nicht die Satelliten importieren, sondern hier die TransponderNr hochzählen:
-              if (!OverwriteSatellites)
+              if (OverwriteSatellites != 2)
               {
                 s = (byte*)FIS_vFlashBlockSatInfo();
+                int i;
                 for (i = 0; i < FileHeader.NrTransponders; i++)
                 {
                   byte SatIdx                 = GetTransponderSatIndex_TMSx((TYPE_TpInfo_TMSx*)(Buffer + FileHeader.TranspondersOffset + i * SIZE_TpInfo_TMSx));
@@ -296,7 +304,9 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
                   }
                   else
                   {
+                    WriteLogCSf(PROGRAM_NAME, "Error: Invalid sat index in transponder %d.", i);
                     *NrTransponders = i;
+                    ret = FALSE;
                     break;
                   }
                 }
@@ -309,12 +319,14 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
           }
 
           // [Services]
+          int j = 0;
           for (j = 0; j <= 1; j++)
           {
             char*                 (*Appl_AddSvcName)(char const*);
             word                  (*Appl_SetProviderName)(char const*);
             TYPE_Service_TMSx      *p;
             word                   *nSvc;
+            int                     i;
 
             Appl_AddSvcName       = (void*)FIS_fwAppl_AddSvcName();
             Appl_SetProviderName  = (void*)FIS_fwAppl_SetProviderName();
@@ -324,7 +336,6 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
 
             p    = (TYPE_Service_TMSx*) ((j==0) ? FIS_vFlashBlockTVServices() : FIS_vFlashBlockRadioServices());
             nSvc =              (word*) ((j==0) ? FIS_vnTvSvc()               : FIS_vnRadioSvc());
-            i    = 0;
 
             if (ret && p && nSvc)
             {
@@ -332,40 +343,45 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
 //              *nSvc = FileHeader.NrTVServices;
 //              TAP_PrintNet("NrTVServices = %lu \n", *nSvc);
 
-              TYPE_Service_TMSx* pServices;
-              pServices = (TYPE_Service_TMSx*) (Buffer + ((j==0) ? FileHeader.TVServicesOffset : FileHeader.RadioServicesOffset));
+              TYPE_Service_TMSx* newServices;
+              newServices = (TYPE_Service_TMSx*) (Buffer + ((j==0) ? FileHeader.TVServicesOffset : FileHeader.RadioServicesOffset));
               for (i = 0; i < ((j==0) ? FileHeader.NrTVServices : FileHeader.NrRadioServices); i++)
               {
-                if ((pServices[i].SatIdx < NrImpSatellites) && (pServices[i].TPIdx < NrImpTransponders))
+                if ((newServices[i].SatIdx < NrImpSatellites) && (newServices[i].TPIdx < NrImpTransponders))
                 {
 //                  *nSvc = (word)(i+1);
                   if (Appl_AddSvcName)
                   {
-                    if (pServices[i].NameOffset < (dword)FileHeader.ServiceNamesLength)
+                    if (newServices[i].NameOffset < (dword)FileHeader.ServiceNamesLength)
                     {
-//TAP_PrintNet("%s\n", &SvcNameBuf[pServices[i].NameOffset]);
-                      pServices[i].NameOffset = (dword)Appl_AddSvcName(&SvcNameBuf[pServices[i].NameOffset]);
+//TAP_PrintNet("%s\n", &SvcNameBuf[newServices[i].NameOffset]);
+                      newServices[i].NameOffset = (dword)Appl_AddSvcName(&SvcNameBuf[newServices[i].NameOffset]);
                     }
                     else
-                      pServices[i].NameOffset = (dword)Appl_AddSvcName("***Dummy***");
+                      newServices[i].NameOffset = (dword)Appl_AddSvcName("* No Name *");
                   }
                   else
                     ret = FALSE;
                   if (Appl_SetProviderName)
                   {
-                    if (pServices[i].ProviderIdx * PROVIDERNAMELENGTH < FileHeader.ProviderNamesLength)
-                      pServices[i].ProviderIdx = Appl_SetProviderName(&PrvNameBuf[pServices[i].ProviderIdx * PROVIDERNAMELENGTH]);
+                    if (newServices[i].ProviderIdx * PROVIDERNAMELENGTH < FileHeader.ProviderNamesLength)
+                      newServices[i].ProviderIdx = Appl_SetProviderName(&PrvNameBuf[newServices[i].ProviderIdx * PROVIDERNAMELENGTH]);
                     else
-                      pServices[i].ProviderIdx = Appl_SetProviderName("");
+                      newServices[i].ProviderIdx = Appl_SetProviderName("");
                   }
                   else
                     ret = FALSE;
-                  pServices[i].NameLock = 0;
-                  memcpy(&p[*nSvc], &pServices[i], SIZE_Service_TMSx);
+                  newServices[i].NameLock = 0;
+                  memcpy(&p[*nSvc], &newServices[i], SIZE_Service_TMSx);
                   *nSvc = *nSvc + 1;
                 }
+                else
+                {
+                  WriteLogCSf(PROGRAM_NAME, "Warning: Invalid sat- or transponder-index for %sService %d!", (j==0) ? "TV" : "Radio", *nSvc);
+                  ret = FALSE;
+                }
               }
-//              memcpy(p, pServices, i * SIZE_Service_TMSx);
+//              memcpy(p, newServices, i * SIZE_Service_TMSx);
 //              *nSvc = (word)(i);
               if (j==0)
                 NrImpTVServices = *nSvc;
@@ -377,27 +393,27 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
               ret = FALSE;
 
             if (j==0)
-              WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d TVServices imported." : "TVServices Fehler", NrImpTVServices, FileHeader.NrTVServices);
+              WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d TVServices imported." : "TVServices error!", NrImpTVServices, FileHeader.NrTVServices);
             else
-              WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d RadioServices imported." : "RadioServices Fehler", NrImpRadioServices, FileHeader.NrRadioServices);
+              WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d RadioServices imported." : "RadioServices error!", NrImpRadioServices, FileHeader.NrRadioServices);
           }
 
           {
             // [Favorites]
             tFavorites           *FavGroups;
             tFavorites           *CurFavGroup;
-            char                 *p;
+            int                   i;
 
-            p = (char*) FIS_vFlashBlockFavoriteGroup();
             FavGroups = (tFavorites*) (Buffer + FileHeader.FavoritesOffset);
 
-            for (i = 0; i < FileHeader.NrFavGroups; i++)
+            if (ret)
             {
-              if (ret)
+              for (i = 0; i < FileHeader.NrFavGroups; i++)
               {
                 CurFavGroup = &FavGroups[i];
                 if (CurFavGroup->GroupName[0])
                 {
+/*                  int j, k;
                   for (j = 0; j < CurFavGroup->NrEntries; j++)
                   {
                     if (((CurFavGroup->SvcType[j]==SVC_TYPE_Tv) && (CurFavGroup->SvcNum[j] >= NrImpTVServices)) || ((CurFavGroup->SvcType[j]==SVC_TYPE_Radio) && (CurFavGroup->SvcNum[j] >= NrImpRadioServices)))
@@ -409,10 +425,12 @@ bool ImportSettings(char *FileName, char *AbsDirectory, bool OverwriteSatellites
                         CurFavGroup->SvcType[k] = CurFavGroup->SvcType[k+1];
                       }
                     }
-                  }
+                  }  */
                   TAP_PrintNet("FavGroup %d: Name = '%s', Entries = %d\n", i, CurFavGroup->GroupName, CurFavGroup->NrEntries);
-                  ret = ret && FlashFavoritesSetInfo(i, &FavGroups[i]);
-                  if (ret) NrImpFavGroups++;
+                  if (FlashFavoritesSetInfo(i, &FavGroups[i]))
+                    NrImpFavGroups++;
+                  else
+                    ret = FALSE;
                 }
               }
             }

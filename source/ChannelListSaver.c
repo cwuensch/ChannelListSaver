@@ -48,7 +48,7 @@ void OSDMenuMessageBoxDoScrollOver(word *event, dword *param1);
 
 // Globale Variablen
 int                     ImportFormat = 0;  // 0 - Binary, 1 - Text, 2 - System
-bool                    OverwriteSatellites = FALSE;
+int                     OverwriteSatellites = 1;  // 0 - nie, 1 - auto, 2 - immer
 
 bool                    CSShowMessageBox = FALSE;
 dword                   LastMessageBoxKey;
@@ -117,7 +117,7 @@ int TAP_Main(void)
         #ifdef FULLDEBUG
           HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
         #endif
-        ret = (DeleteAllSettings(OverwriteSatellites) &&
+        ret = (DeleteAllSettings(OverwriteSatellites==2) &&
                ImportSettings_Text(EXPORTFILENAME ".txt", TAPFSROOT LOGDIR, OverwriteSatellites));
         #ifdef FULLDEBUG
           ExportSettings("Debug_AfterTxtImport.dat", TAPFSROOT LOGDIR);
@@ -139,7 +139,7 @@ int TAP_Main(void)
         #ifdef FULLDEBUG
           HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
         #endif
-        ret = (DeleteAllSettings(OverwriteSatellites) &&
+        ret = (DeleteAllSettings(OverwriteSatellites==2) &&
                ImportSettings(EXPORTFILENAME ".dat", TAPFSROOT LOGDIR, OverwriteSatellites));
         #ifdef FULLDEBUG
           ExportSettings("Debug_AfterBinImport.dat", TAPFSROOT LOGDIR);
@@ -444,7 +444,7 @@ void LoadINI(void)
   if((IniFileState != INILOCATION_NotFound) && (IniFileState != INILOCATION_NewFile))
   {
     ImportFormat        = INIGetInt("ImportFormat",        1, 0, 2);   // 0 - Binary, 1 - Text, 2 - System
-    OverwriteSatellites = INIGetInt("OverwriteSatellites", 0, 0, 1)  ==  1;
+    OverwriteSatellites = INIGetInt("OverwriteSatellites", 1, 0, 2);
   }
   INICloseFile();
 
@@ -463,7 +463,7 @@ void SaveINI(void)
   HDD_ChangeDir(LOGDIR);
   INIOpenFile(INIFILENAME, PROGRAM_NAME);
   INISetInt ("ImportFormat",        ImportFormat);
-  INISetInt ("OverwriteSatellites", OverwriteSatellites ?  1  :  0);
+  INISetInt ("OverwriteSatellites", OverwriteSatellites);
   INISaveFile(INIFILENAME, INILOCATION_AtCurrentDir, NULL);
   INICloseFile();
   HDD_TAP_PopDir();
@@ -586,13 +586,12 @@ void DeleteServiceNames(void)
   Appl_DeleteTvSvcName    = (void*)FIS_fwAppl_DeleteTvSvcName();
   Appl_DeleteRadioSvcName = (void*)FIS_fwAppl_DeleteRadioSvcName();
 
-//  TYPE_Service_TMSx    *p;
   int                   nTVServices, nRadioServices, i;
   TAP_Channel_GetTotalNum(&nTVServices, &nRadioServices);
 
   WriteLogCS(PROGRAM_NAME, "DeleteServiceNames()");
-  DebugServiceNames("vorher.dat");
 //  char tmp[512];
+//  DebugServiceNames("vorher.dat");
   for (i = (nRadioServices - 1); i >= 0; i--)
   {
     Appl_DeleteRadioSvcName(i, FALSE);
@@ -600,15 +599,14 @@ void DeleteServiceNames(void)
 //    DebugServiceNames(tmp);
   }
 
-//  Appl_DeleteTvSvcName(0, TRUE);  // BUG: egal, was man tut - der Eintrag in 0 wird niemals gelöscht :-(
   for (i = (nTVServices - 1); i >= 0; i--)
   {
     Appl_DeleteTvSvcName(i, FALSE);
-//    TAP_SPrint(tmp, sizeof(tmp), "TV%d.dat", i);
+//    TAP_SPrint(tmp, sizeof(tmp), "TV%d.dat", i);   // BUG: egal, was man tut - der Eintrag in 0 wird niemals gelöscht :-(
 //    DebugServiceNames(tmp);
   }
 
-  DebugServiceNames("nachher.dat");
+//  DebugServiceNames("nachher.dat");
   TRACEEXIT();
 }
 
