@@ -117,8 +117,7 @@ int TAP_Main(void)
         #ifdef FULLDEBUG
           HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
         #endif
-        ret = (DeleteAllSettings(OverwriteSatellites==2) &&
-               ImportSettings_Text(EXPORTFILENAME ".txt", TAPFSROOT LOGDIR, OverwriteSatellites));
+        ret = ImportSettings_Text(EXPORTFILENAME ".txt", TAPFSROOT LOGDIR, OverwriteSatellites);
         #ifdef FULLDEBUG
           ExportSettings("Debug_AfterTxtImport.dat", TAPFSROOT LOGDIR);
         #endif
@@ -139,8 +138,7 @@ int TAP_Main(void)
         #ifdef FULLDEBUG
           HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
         #endif
-        ret = (DeleteAllSettings(OverwriteSatellites==2) &&
-               ImportSettings(EXPORTFILENAME ".dat", TAPFSROOT LOGDIR, OverwriteSatellites));
+        ret = ImportSettings(EXPORTFILENAME ".dat", TAPFSROOT LOGDIR, OverwriteSatellites);
         #ifdef FULLDEBUG
           ExportSettings("Debug_AfterBinImport.dat", TAPFSROOT LOGDIR);
         #endif
@@ -519,7 +517,7 @@ bool InitSystemType(void)
       break;
 
     default:
-      WriteLogCS(PROGRAM_NAME, "Nicht unterstützte Favoriten-Struktur!");
+      WriteLogCS(PROGRAM_NAME, "Unsupported favorites structure!");
       ret = FALSE;
       break;
   }
@@ -561,6 +559,34 @@ int GetLengthOfServiceNames(int *NrServiceNames)
   return Result;
 }
 
+int GetLengthOfProvNames(int *NrProviderNames)
+{
+  TRACEENTER();
+  int Result = 0;
+  int i;
+  tProviderName *p;
+  p = (tProviderName*)(FIS_vFlashBlockProviderInfo());
+
+  if(NrProviderNames) *NrProviderNames = 0;
+  if(p)
+  {
+    for (i = 0; i < NRPROVIDERNAMES; i++)
+    {
+      if (p[i].name[0])
+      {
+        if (NrProviderNames) *NrProviderNames = *NrProviderNames + 1;
+      }
+      else
+      {
+        Result = i * PROVIDERNAMELENGTH;
+        break;
+      }
+    }
+  }
+  TRACEEXIT();
+  return Result;
+}
+
 bool DeleteTimers(void)
 {
   TRACEENTER();
@@ -573,7 +599,7 @@ bool DeleteTimers(void)
     ret = TAP_Timer_Delete(0) && ret;
     Count++;
   }
-  WriteLogCSf(PROGRAM_NAME, "%d timers have been deleted.", Count);
+  WriteLogCSf(PROGRAM_NAME, "  %d timers have been deleted.", Count);
   TRACEEXIT();
   return ret;
 }
@@ -589,7 +615,7 @@ void DeleteServiceNames(void)
   int                   nTVServices, nRadioServices, i;
   TAP_Channel_GetTotalNum(&nTVServices, &nRadioServices);
 
-  WriteLogCS(PROGRAM_NAME, "DeleteServiceNames()");
+  WriteLogCS(PROGRAM_NAME, "  DeleteServiceNames()");
 //  char tmp[512];
 //  DebugServiceNames("vorher.dat");
   for (i = (nRadioServices - 1); i >= 0; i--)
@@ -615,8 +641,7 @@ bool DeleteAllSettings(bool OverwriteSatellites)
   TRACEENTER();
   bool ret = TRUE;
 
-  WriteLogCS(PROGRAM_NAME, "[Action] Deleting all settings...");
-  WriteLogCS(PROGRAM_NAME, "----------------------------------------");
+  WriteLogCS(PROGRAM_NAME, "Deleting all settings:");
   DeleteTimers();
   {
     // Favorites
@@ -647,7 +672,7 @@ bool DeleteAllSettings(bool OverwriteSatellites)
 
     p = (char*)(FIS_vFlashBlockProviderInfo());
     if(ret && p)
-      memset(p, 0, PROVIDERNAMELENGTH * NRPROVIDERNAMES);
+      memset(p, 0, GetLengthOfProvNames(NULL));
   }
 
   {
@@ -717,7 +742,7 @@ bool DeleteAllSettings(bool OverwriteSatellites)
     else ret = FALSE;
   }
 
-  if(!ret) WriteLogCS(PROGRAM_NAME, "Error while deleting old settings!");
+  if(!ret) WriteLogCS(PROGRAM_NAME, "  Error while deleting old settings!");
   TRACEEXIT();
   return ret;
 }

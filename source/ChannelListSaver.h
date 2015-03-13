@@ -23,6 +23,11 @@
 #define SERVICENAMESLENGTH    39996    // 40000 / 40004 / 39996 ***  ?
 
 
+typedef struct tProvicerName
+{
+  char name[PROVIDERNAMELENGTH];
+} tProviderName;
+
 typedef struct
 {
   char                  Magic[6];     // TFchan
@@ -90,7 +95,8 @@ void  LoadINI(void);
 void  SaveINI(void);
 
 bool  InitSystemType(void);
-int  GetLengthOfServiceNames(int *NrServiceNames);
+int   GetLengthOfServiceNames(int *NrServiceNames);
+int   GetLengthOfProvNames(int *NrProviderNames);
 bool  DeleteTimers(void);
 void  DeleteServiceNames(void);
 bool  DeleteAllSettings(bool OverwriteSatellites);

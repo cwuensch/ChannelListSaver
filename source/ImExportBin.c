@@ -122,7 +122,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
     {
       // [Favorites]
       tFavorites FavGroup;
-      FileHeader.NrFavGroups = NrFavGroups;
+      FileHeader.NrFavGroups = FlashFavoritesGetTotal();
       FileHeader.NrSvcsPerFavGroup = NrFavsPerGroup;
       ret = fwrite(&FileHeader.NrFavGroups, sizeof(FileHeader.NrFavGroups), 1, fExportFile) && ret;
       FileHeader.FavoritesOffset = ftell(fExportFile);
@@ -139,18 +139,18 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
       char *p1, *p2;
       p1 = (char*)(FIS_vFlashBlockServiceName());
       p2 = (char*)(FIS_vFlashBlockProviderInfo());
-      int NrProviderNames = NRPROVIDERNAMES;
-      int NrServiceNames;
+      int NrProviderNames, NrServiceNames;
 
       // [ProviderNames]
+      FileHeader.ProviderNamesLength = GetLengthOfProvNames(&NrProviderNames);
       ret = fwrite(&NrProviderNames, sizeof(NrProviderNames), 1, fExportFile) && ret;
       FileHeader.ProviderNamesOffset = ftell(fExportFile);
       if(p2)
       {
-        FileHeader.ProviderNamesLength = PROVIDERNAMELENGTH * NRPROVIDERNAMES;  // ***  5380 ?
+//        FileHeader.ProviderNamesLength = NRPROVIDERNAMES * PROVIDERNAMELENGTH;  // ***  5380 ?
         ret = fwrite(p2, 1, FileHeader.ProviderNamesLength, fExportFile) && ret;
       }
-      WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d ProviderNames exported." : "%5d ProviderNames error!", NRPROVIDERNAMES);
+      WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d ProviderNames exported (%d Bytes)." : "%5d ProviderNames error (%d Bytes)!", NrProviderNames, FileHeader.ProviderNamesLength);
 
       // [ServiceNames]
       FileHeader.ServiceNamesLength = GetLengthOfServiceNames(&NrServiceNames);
@@ -178,7 +178,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
     }
   }
   else
-    WriteLogCS(PROGRAM_NAME, "File not found.");
+    WriteLogCS(PROGRAM_NAME, "  File not found!");
 
   if (ret)
     WriteLogCSf(PROGRAM_NAME, "--> Export '%s' (binary) successful.", FileName);
@@ -253,20 +253,25 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
                 {
                   FlashSatTablesDecode(p + i * SIZE_SatInfo_TMSx, &IstSat);
                   if ((IstSat.SatPosition != CurSat.SatPosition) || (strcmp(IstSat.SatName, CurSat.SatName) != 0))
-                    WriteLogCSf(PROGRAM_NAME, "Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", i, CurSat.SatName, IstSat.SatName);
+                    WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", i, CurSat.SatName, IstSat.SatName);
                   if (OverwriteSatellites) OverwriteSatellites = 2;
                 }
                 else
                 {
-                  WriteLogCSf(PROGRAM_NAME, "Warning: Satellite nr. %d ('%s') not found in receiver!", i, CurSat.SatName);
+                  WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d ('%s') not found in receiver!", i, CurSat.SatName);
                   if (OverwriteSatellites) OverwriteSatellites = 2;
                   else ret = FALSE;
                 }
               }
             }
-            if (OverwriteSatellites == 2)
+
+            ret = ret && DeleteAllSettings(OverwriteSatellites == 2);
+            WriteLogCS(PROGRAM_NAME, "Importing settings:");
+
+            if (ret && (OverwriteSatellites == 2))
             {
               memcpy(p, Buffer + FileHeader.SatellitesOffset, FileHeader.NrSatellites * SIZE_SatInfo_TMSx);
+//              memset(p + FileHeader.NrSatellites * SIZE_SatInfo_TMSx, 0, SIZE_SatInfo_TMSx);
               NrImpSatellites = FileHeader.NrSatellites;
             }
           }
@@ -304,7 +309,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
                   }
                   else
                   {
-                    WriteLogCSf(PROGRAM_NAME, "Error: Invalid sat index in transponder %d.", i);
+                    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid sat index in transponder %d.", i);
                     *NrTransponders = i;
                     ret = FALSE;
                     break;
@@ -354,7 +359,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
                   {
                     if (newServices[i].NameOffset < (dword)FileHeader.ServiceNamesLength)
                     {
-//TAP_PrintNet("%s\n", &SvcNameBuf[newServices[i].NameOffset]);
+//                      TAP_PrintNet("%s\n", &SvcNameBuf[newServices[i].NameOffset]);
                       newServices[i].NameOffset = (dword)Appl_AddSvcName(&SvcNameBuf[newServices[i].NameOffset]);
                     }
                     else
@@ -377,7 +382,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
                 }
                 else
                 {
-                  WriteLogCSf(PROGRAM_NAME, "Warning: Invalid sat- or transponder-index for %sService %d!", (j==0) ? "TV" : "Radio", *nSvc);
+                  WriteLogCSf(PROGRAM_NAME, "  Warning: Invalid sat- or transponder-index for %sService %d!", (j==0) ? "TV" : "Radio", *nSvc);
                   ret = FALSE;
                 }
               }
@@ -426,7 +431,9 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
                       }
                     }
                   }  */
-                  TAP_PrintNet("FavGroup %d: Name = '%s', Entries = %d\n", i, CurFavGroup->GroupName, CurFavGroup->NrEntries);
+#ifdef FULLDEBUG
+  TAP_PrintNet("  FavGroup %d: Name = '%s', Entries = %d\n", i, CurFavGroup->GroupName, CurFavGroup->NrEntries);
+#endif
                   if (FlashFavoritesSetInfo(i, &FavGroups[i]))
                     NrImpFavGroups++;
                   else
@@ -441,14 +448,14 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
         TAP_MemFree(Buffer);
       }
       else
-        WriteLogCS(PROGRAM_NAME, "Not enough memory!");
+        WriteLogCS(PROGRAM_NAME, "  Not enough memory!");
     }
     else
-      WriteLogCS(PROGRAM_NAME, "Invalid header format!");
+      WriteLogCS(PROGRAM_NAME, "  Invalid header format!");
     fclose(fImportFile);
   }
   else
-    WriteLogCS (PROGRAM_NAME, "File not found!");
+    WriteLogCS (PROGRAM_NAME, "  File not found!");
 //  if(ret)
 //    FlashProgram();
 
