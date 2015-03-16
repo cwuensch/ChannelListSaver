@@ -98,6 +98,7 @@ int TAP_Main(void)
   {
     TAP_Hdd_ChangeDir(LOGDIR);
     LoadINI();
+    WriteLogCSf(PROGRAM_NAME, "Parameters: ImportFormat=%d, OverwriteSatellites=%d", ImportFormat, OverwriteSatellites);
 
     if (TAP_Hdd_Exist("Settings.std") && (ImportFormat == 2 || (!TAP_Hdd_Exist(EXPORTFILENAME ".dat") && !TAP_Hdd_Exist(EXPORTFILENAME ".txt"))))
     {
@@ -636,12 +637,12 @@ void DeleteServiceNames(void)
   TRACEEXIT();
 }
 
-bool DeleteAllSettings(bool OverwriteSatellites)
+bool DeleteAllSettings(bool DeleteSatellites)
 {
   TRACEENTER();
   bool ret = TRUE;
 
-  WriteLogCS(PROGRAM_NAME, "Deleting all settings:");
+  WriteLogCSf(PROGRAM_NAME, "Deleting all settings (DeleteSat=%s):", (DeleteSatellites ? "true" : "false"));
   DeleteTimers();
   {
     // Favorites
@@ -726,7 +727,7 @@ bool DeleteAllSettings(bool OverwriteSatellites)
     p = (byte*)FIS_vFlashBlockSatInfo();
     if (ret && p)
     {
-      if (OverwriteSatellites)
+      if (DeleteSatellites)
         memset(p, 0, FlashSatTablesGetTotal() * SIZE_SatInfo_TMSx);
       else
       {

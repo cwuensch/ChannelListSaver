@@ -746,13 +746,21 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
               if ((IstSat.SatPosition != CurSat.SatPosition) || (strcmp(IstSat.SatName, CurSat.SatName) != 0))
               {
                 WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", NrSats, CurSat.SatName, IstSat.SatName);
-                if (OverwriteSatellites) OverwriteSatellites = 2;
+                if (OverwriteSatellites == 1)
+                {
+                  WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites from now...");
+                  OverwriteSatellites = 2;
+                }
               }
             }
             else
             {
               WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d ('%s') not found in receiver!", NrSats, CurSat.SatName);
-              if (OverwriteSatellites) OverwriteSatellites = 2;
+              if (OverwriteSatellites == 1)
+              {
+                OverwriteSatellites = 2;
+                WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites from now...");
+              }
               else ret = FALSE;
             }
           }

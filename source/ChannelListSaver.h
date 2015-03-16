@@ -4,7 +4,7 @@
 #define TAP_SPrint    snprintf
 
 #define PROGRAM_NAME          "ChannelListSaver"
-#define VERSION               "V0.4"
+#define VERSION               "V0.5"
 #define TAPID                 0x2A0A0002
 #define AUTHOR                "chris86"
 //#define DESCRIPTION           "Im-/Export of Sat-, Transponder- & Channel-Lists"
@@ -99,6 +99,6 @@ int   GetLengthOfServiceNames(int *NrServiceNames);
 int   GetLengthOfProvNames(int *NrProviderNames);
 bool  DeleteTimers(void);
 void  DeleteServiceNames(void);
-bool  DeleteAllSettings(bool OverwriteSatellites);
+bool  DeleteAllSettings(bool DeleteSatellites);
 
 #endif

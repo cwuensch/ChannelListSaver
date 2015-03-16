@@ -66,7 +66,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
           ret = fwrite(p, SIZE_SatInfo_TMSx, FileHeader.NrSatellites, fExportFile) && ret;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Satellites exported." : "%5d Satellites error!", FileHeader.NrSatellites);
+    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Satellites exported." : "Satellites error (%d)!", FileHeader.NrSatellites);
 
     {
       // [Transponders]
@@ -83,7 +83,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
           ret = fwrite(p, SIZE_TpInfo_TMSx, FileHeader.NrTransponders, fExportFile) && ret;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Transponders exported." : "%5d Transponders error!", FileHeader.NrTransponders);
+    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Transponders exported." : "Transponders error (%d)!", FileHeader.NrTransponders);
 
     {
       // [TVServices]
@@ -100,7 +100,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
           ret = fwrite(p, SIZE_Service_TMSx, FileHeader.NrTVServices, fExportFile) && ret;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d TVServices exported." : "%5d TVServices error!", FileHeader.NrTVServices);
+    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d TVServices exported." : "TVServices error (%d)!", FileHeader.NrTVServices);
 
     {
       // [RadioServices]
@@ -117,7 +117,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
           ret = fwrite(p, SIZE_Service_TMSx, FileHeader.NrRadioServices, fExportFile) && ret;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d RadioServices exported." : "%5d RadioServices error!", FileHeader.NrRadioServices);
+    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d RadioServices exported." : "RadioServices error (%d)!", FileHeader.NrRadioServices);
 
     {
       // [Favorites]
@@ -133,7 +133,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
         ret = fwrite(&FavGroup, sizeof(tFavorites), 1, fExportFile) && ret;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Favorite-Groups exported." : "%5d Favorites error!", FileHeader.NrFavGroups);
+    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Favorite-Groups exported." : "Favorites error (%d)!", FileHeader.NrFavGroups);
 
     {
       char *p1, *p2;
@@ -150,7 +150,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
 //        FileHeader.ProviderNamesLength = NRPROVIDERNAMES * PROVIDERNAMELENGTH;  // ***  5380 ?
         ret = fwrite(p2, 1, FileHeader.ProviderNamesLength, fExportFile) && ret;
       }
-      WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d ProviderNames exported (%d Bytes)." : "%5d ProviderNames error (%d Bytes)!", NrProviderNames, FileHeader.ProviderNamesLength);
+      WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d ProviderNames exported (%d Bytes)." : "ProviderNames error (%d, %d Bytes)!", NrProviderNames, FileHeader.ProviderNamesLength);
 
       // [ServiceNames]
       FileHeader.ServiceNamesLength = GetLengthOfServiceNames(&NrServiceNames);
@@ -163,7 +163,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
 //          FileHeader.ServiceNamesLength = p2 - p1;
         ret = fwrite(p1, 1, FileHeader.ServiceNamesLength, fExportFile) && ret;
       }
-      WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d ServiceNames exported (%d Bytes)." : "%5d ServiceNames error (%d Bytes)!", NrServiceNames, FileHeader.ServiceNamesLength);
+      WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d ServiceNames exported (%d Bytes)." : "ServiceNames error (%d, %d Bytes)!", NrServiceNames, FileHeader.ServiceNamesLength);
     }
 
     FileHeader.FileSize = ftell(fExportFile);
@@ -233,11 +233,11 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
 
           // Now write the data blocks from the file to the RAM
           // [Satellites]
-          TYPE_SatInfo_TMSS *p;
+          byte *p;
 
 // FRAGE: Lieber die Satellites- und Transponders einzeln oder als Block einspielen? -> v.a. bei auto wichtig. Und dann eigene Zählung!
 
-          p = (TYPE_SatInfo_TMSS*)FIS_vFlashBlockSatInfo();
+          p = (byte*)FIS_vFlashBlockSatInfo();
           if (ret && p)
           {
             if (OverwriteSatellites != 2)  // auto oder nie
@@ -253,13 +253,23 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
                 {
                   FlashSatTablesDecode(p + i * SIZE_SatInfo_TMSx, &IstSat);
                   if ((IstSat.SatPosition != CurSat.SatPosition) || (strcmp(IstSat.SatName, CurSat.SatName) != 0))
+                  {
                     WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", i, CurSat.SatName, IstSat.SatName);
-                  if (OverwriteSatellites) OverwriteSatellites = 2;
+                    if (OverwriteSatellites == 1)
+                    {
+                      WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites...");
+                      OverwriteSatellites = 2;
+                    }
+                  }
                 }
                 else
                 {
                   WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d ('%s') not found in receiver!", i, CurSat.SatName);
-                  if (OverwriteSatellites) OverwriteSatellites = 2;
+                  if (OverwriteSatellites == 1)
+                  {
+                    WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites...");
+                    OverwriteSatellites = 2;
+                  }
                   else ret = FALSE;
                 }
               }
@@ -277,7 +287,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
           }
           else
             ret = FALSE;
-          WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Satellites imported." : "Satellites error!", ((OverwriteSatellites==2) ? NrImpSatellites : 0), FileHeader.NrSatellites);
+          WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Satellites imported." : "Satellites error (%d / %d)!", ((OverwriteSatellites==2) ? NrImpSatellites : 0), FileHeader.NrSatellites);
 
           {
             // [Transponders]
@@ -320,7 +330,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
             }
             else
               ret = FALSE;
-            WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Transponders imported." : "Transponders error!", NrImpTransponders, FileHeader.NrTransponders);
+            WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Transponders imported." : "Transponders error (%d / %d)!", NrImpTransponders, FileHeader.NrTransponders);
           }
 
           // [Services]
@@ -398,9 +408,9 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
               ret = FALSE;
 
             if (j==0)
-              WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d TVServices imported." : "TVServices error!", NrImpTVServices, FileHeader.NrTVServices);
+              WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d TVServices imported." : "TVServices error (%d / %d)!", NrImpTVServices, FileHeader.NrTVServices);
             else
-              WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d RadioServices imported." : "RadioServices error!", NrImpRadioServices, FileHeader.NrRadioServices);
+              WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d RadioServices imported." : "RadioServices error (%d / %d)!", NrImpRadioServices, FileHeader.NrRadioServices);
           }
 
           {
@@ -432,9 +442,9 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
                     }
                   }  */
 #ifdef FULLDEBUG
-  TAP_PrintNet("  FavGroup %d: Name = '%s', Entries = %d\n", i, CurFavGroup->GroupName, CurFavGroup->NrEntries);
+  TAP_PrintNet("FavGroup %d: Name = '%s', Entries = %d\n", i, CurFavGroup->GroupName, CurFavGroup->NrEntries);
 #endif
-                  if (FlashFavoritesSetInfo(i, &FavGroups[i]))
+                  if (FlashFavoritesSetInfo(NrImpFavGroups, &FavGroups[i]))
                     NrImpFavGroups++;
                   else
                     ret = FALSE;
@@ -442,7 +452,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
               }
             }
           }
-          WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Favorite-Groups imported." : "Favorites error!", NrImpFavGroups, FileHeader.NrFavGroups);
+          WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Favorite-Groups imported." : "Favorites error (%d / %d)!", NrImpFavGroups, FileHeader.NrFavGroups);
         }
 
         TAP_MemFree(Buffer);
