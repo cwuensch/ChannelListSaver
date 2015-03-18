@@ -99,6 +99,6 @@ int   GetLengthOfServiceNames(int *NrServiceNames);
 int   GetLengthOfProvNames(int *NrProviderNames);
 bool  DeleteTimers(void);
 void  DeleteServiceNames(void);
-bool  DeleteAllSettings(bool DeleteSatellites);
+bool  DeleteAllSettings(bool OverwriteSatellites);
 
 #endif

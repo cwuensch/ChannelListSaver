@@ -63,7 +63,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
         ret = fwrite(&FileHeader.NrSatellites, sizeof(FileHeader.NrSatellites), 1, fExportFile) && ret;
         FileHeader.SatellitesOffset = ftell(fExportFile);
         if (FileHeader.NrSatellites > 0)
-          ret = fwrite(p, SIZE_SatInfo_TMSx, FileHeader.NrSatellites, fExportFile) && ret;
+          ret = (fwrite(p, SIZE_SatInfo_TMSx, FileHeader.NrSatellites, fExportFile) == (dword)FileHeader.NrSatellites) && ret;
       }
     }
     WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Satellites exported." : "Satellites error (%d)!", FileHeader.NrSatellites);
@@ -80,7 +80,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
         ret = fwrite(&FileHeader.NrTransponders, sizeof(FileHeader.NrTransponders), 1, fExportFile) && ret;
         FileHeader.TranspondersOffset = ftell(fExportFile);
         if (FileHeader.NrTransponders > 0)
-          ret = fwrite(p, SIZE_TpInfo_TMSx, FileHeader.NrTransponders, fExportFile) && ret;
+          ret = (fwrite(p, SIZE_TpInfo_TMSx, FileHeader.NrTransponders, fExportFile) == (dword)FileHeader.NrTransponders) && ret;
       }
     }
     WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Transponders exported." : "Transponders error (%d)!", FileHeader.NrTransponders);
@@ -97,7 +97,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
         ret = fwrite(&FileHeader.NrTVServices, sizeof(FileHeader.NrTVServices), 1, fExportFile) && ret;
         FileHeader.TVServicesOffset = ftell(fExportFile);
         if (FileHeader.NrTVServices > 0)
-          ret = fwrite(p, SIZE_Service_TMSx, FileHeader.NrTVServices, fExportFile) && ret;
+          ret = (fwrite(p, SIZE_Service_TMSx, FileHeader.NrTVServices, fExportFile) == (dword)FileHeader.NrTVServices) && ret;
       }
     }
     WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d TVServices exported." : "TVServices error (%d)!", FileHeader.NrTVServices);
@@ -114,7 +114,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
         ret = fwrite(&FileHeader.NrRadioServices, sizeof(FileHeader.NrRadioServices), 1, fExportFile) && ret;
         FileHeader.RadioServicesOffset = ftell(fExportFile);
         if (FileHeader.NrRadioServices > 0)
-          ret = fwrite(p, SIZE_Service_TMSx, FileHeader.NrRadioServices, fExportFile) && ret;
+          ret = (fwrite(p, SIZE_Service_TMSx, FileHeader.NrRadioServices, fExportFile) == (dword)FileHeader.NrRadioServices) && ret;
       }
     }
     WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d RadioServices exported." : "RadioServices error (%d)!", FileHeader.NrRadioServices);
@@ -147,8 +147,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
       FileHeader.ProviderNamesOffset = ftell(fExportFile);
       if(p2)
       {
-//        FileHeader.ProviderNamesLength = NRPROVIDERNAMES * PROVIDERNAMELENGTH;  // ***  5380 ?
-        ret = fwrite(p2, 1, FileHeader.ProviderNamesLength, fExportFile) && ret;
+        ret = (fwrite(p2, 1, FileHeader.ProviderNamesLength, fExportFile) == (dword)FileHeader.ProviderNamesLength) && ret;
       }
       WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d ProviderNames exported (%d Bytes)." : "ProviderNames error (%d, %d Bytes)!", NrProviderNames, FileHeader.ProviderNamesLength);
 
@@ -158,10 +157,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
       FileHeader.ServiceNamesOffset = ftell(fExportFile);
       if(p1)
       {
-//        FileHeader.ServiceNamesLength = 40004;   // 40000 / 39996 ***  ?
-//        if(p2)
-//          FileHeader.ServiceNamesLength = p2 - p1;
-        ret = fwrite(p1, 1, FileHeader.ServiceNamesLength, fExportFile) && ret;
+        ret = (fwrite(p1, 1, FileHeader.ServiceNamesLength, fExportFile) == (dword)FileHeader.ServiceNamesLength) && ret;
       }
       WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d ServiceNames exported (%d Bytes)." : "ServiceNames error (%d, %d Bytes)!", NrServiceNames, FileHeader.ServiceNamesLength);
     }
@@ -254,20 +250,20 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
                   FlashSatTablesDecode(p + i * SIZE_SatInfo_TMSx, &IstSat);
                   if ((IstSat.SatPosition != CurSat.SatPosition) || (strcmp(IstSat.SatName, CurSat.SatName) != 0))
                   {
-                    WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", i, CurSat.SatName, IstSat.SatName);
+                    WriteLogCSf(PROGRAM_NAME, "Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", i, CurSat.SatName, IstSat.SatName);
                     if (OverwriteSatellites == 1)
                     {
-                      WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites...");
+                      WriteLogCS(PROGRAM_NAME, "--> Will overwrite satellites...");
                       OverwriteSatellites = 2;
                     }
                   }
                 }
                 else
                 {
-                  WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d ('%s') not found in receiver!", i, CurSat.SatName);
+                  WriteLogCSf(PROGRAM_NAME, "Warning: Satellite nr. %d ('%s') not found in receiver!", i, CurSat.SatName);
                   if (OverwriteSatellites == 1)
                   {
-                    WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites...");
+                    WriteLogCS(PROGRAM_NAME, "--> Will overwrite satellites...");
                     OverwriteSatellites = 2;
                   }
                   else ret = FALSE;

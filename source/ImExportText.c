@@ -464,7 +464,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
       char                  *p;
 
       ret = (fprintf(fExportFile, "[Favorites]" CRLF)                   > 0) && ret;
-      ret = (fprintf(fExportFile, "#Nr; GroupName   ;  T/R;  SvcNums" CRLF)  > 0) && ret;
+      ret = (fprintf(fExportFile, "#Nr; GroupName   ; T/R;  SvcNums" CRLF)  > 0) && ret;
       z += 2;
 
       FileHeader.NrFavGroups = 0;
@@ -474,7 +474,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
         {
           while ((p = strchr(CurFavGroup.GroupName, ';')))
             p[0] = '_';
-          ret = (fprintf(fExportFile, "%3d; %-12s;    %c;" , i, CurFavGroup.GroupName, ((CurFavGroup.SvcType[0]==0) ? 'T' : 'R')) > 0) && ret;
+          ret = (fprintf(fExportFile, "%3d; %-12s;   %c;" , i, CurFavGroup.GroupName, ((CurFavGroup.SvcType[0]==0) ? 'T' : 'R')) > 0) && ret;
           for (j = 0; j < CurFavGroup.NrEntries; j++)
             ret = (fprintf(fExportFile, (j==0 ? "  %hu" : ", %hu"), CurFavGroup.SvcNum[j]) > 0) && ret;
 //          ret = (fprintf(fExportFile, "; %#01X", CurFavGroup.unused1)   > 0) && ret;
@@ -750,6 +750,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
                 {
                   WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites from now...");
                   OverwriteSatellites = 2;
+                  NrImpSatellites = NrSats;
                 }
               }
             }
@@ -758,8 +759,9 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
               WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d ('%s') not found in receiver!", NrSats, CurSat.SatName);
               if (OverwriteSatellites == 1)
               {
-                OverwriteSatellites = 2;
                 WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites from now...");
+                OverwriteSatellites = 2;
+                NrImpSatellites = NrSats;
               }
               else ret = FALSE;
             }
@@ -767,7 +769,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           if (OverwriteSatellites == 2)  // auto oder nie
           {
             if (ret)
-              ret = FlashSatTablesSetInfo(NrImpSatellites, &CurSat);
+              ret = FlashSatTablesSetInfo(NrSats, &CurSat);
 
             if (ret)
               NrImpSatellites++;

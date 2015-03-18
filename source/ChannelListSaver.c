@@ -543,14 +543,17 @@ int GetLengthOfServiceNames(int *NrServiceNames)
     if (p2 && (p2 > p1) && (p2-p1 < Result))
       Result = p2 - p1;
 
-    for (i = 0; i < Result-1; i++)
+    for (i = 0; i < Result; i++)
     {
-      if (!p1[i])
+      if ((i==0) || (p1[i-1]==0))
       {
-        if (NrServiceNames) *NrServiceNames = *NrServiceNames + 1;
-        if (!p1[i+1])
+        if (p1[i])
         {
-          Result = i+1;
+          if (NrServiceNames) *NrServiceNames = *NrServiceNames + 1;
+        }
+        else
+        {
+          Result = i;
           break;
         }
       }
@@ -564,26 +567,17 @@ int GetLengthOfProvNames(int *NrProviderNames)
 {
   TRACEENTER();
   int Result = 0;
-  int i;
+  int i = 0;
   tProviderName *p;
   p = (tProviderName*)(FIS_vFlashBlockProviderInfo());
 
-  if(NrProviderNames) *NrProviderNames = 0;
   if(p)
   {
-    for (i = 0; i < NRPROVIDERNAMES; i++)
-    {
-      if (p[i].name[0])
-      {
-        if (NrProviderNames) *NrProviderNames = *NrProviderNames + 1;
-      }
-      else
-      {
-        Result = i * PROVIDERNAMELENGTH;
-        break;
-      }
-    }
+    for (i = 0; i <= NRPROVIDERNAMES; i++)
+      if ((i == NRPROVIDERNAMES) || (!p[i].name[0])) break;
   }
+  if (NrProviderNames) *NrProviderNames = i;
+  Result = i * PROVIDERNAMELENGTH;
   TRACEEXIT();
   return Result;
 }
