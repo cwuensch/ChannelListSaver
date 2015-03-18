@@ -769,7 +769,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           if (OverwriteSatellites == 2)  // auto oder nie
           {
             if (ret)
-              ret = FlashSatTablesSetInfo(NrSats, &CurSat);
+              ret = FlashSatTablesSetInfo(NrImpSatellites, &CurSat);
 
             if (ret)
               NrImpSatellites++;
@@ -853,7 +853,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           CurService.NameLock = CharToBool(CharNameLock);
           ret = StrToByteArr(CurService.unknown2, StringBuf3, sizeof(CurService.unknown2)) && ret;
 
-          if (ret && (CurService.SatIndex < NrImpSatellites) && (CurService.TransponderIndex < NrImpTransponders))
+          if (ret && (CurService.SatIndex < NrImpSatellites) && (CurService.TransponderIndex < FlashTransponderTablesGetTotal(CurService.SatIndex)))
             ret = FlashServiceAdd((CurMode==SM_TVServices) ? SVC_TYPE_Tv : SVC_TYPE_Radio, &CurService);
           else
             ret = FALSE;

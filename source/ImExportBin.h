@@ -2,6 +2,7 @@
 #define __IMEXPORTBINH__
 
 byte   GetTransponderSatIndex_TMSx(TYPE_TpInfo_TMSx *pTpInfo);
+word   GetNrTranspOfSat_TMSx(TYPE_SatInfo_TMSx *pSatInfo);
 word*  GetpNrTranspOfSat_TMSx(TYPE_SatInfo_TMSx *pSatInfo);
 
 bool   ExportSettings(char *FileName, char *AbsDirectory);

@@ -19,6 +19,10 @@ byte GetTransponderSatIndex_TMSx(TYPE_TpInfo_TMSx *pTpInfo)
 {  
   return *((byte*) pTpInfo);
 }
+word GetNrTranspOfSat_TMSx(TYPE_SatInfo_TMSx *pSatInfo)
+{  
+  return *((word*) pSatInfo);
+}
 word* GetpNrTranspOfSat_TMSx(TYPE_SatInfo_TMSx *pSatInfo)
 {  
   return ((word*) pSatInfo);
@@ -336,6 +340,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
             char*                 (*Appl_AddSvcName)(char const*);
             word                  (*Appl_SetProviderName)(char const*);
             TYPE_Service_TMSx      *p;
+            byte                   *s;
             word                   *nSvc;
             int                     i;
 
@@ -345,6 +350,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
             char* SvcNameBuf = Buffer + FileHeader.ServiceNamesOffset;
             char* PrvNameBuf = Buffer + FileHeader.ProviderNamesOffset;
 
+            s = (byte*)FIS_vFlashBlockSatInfo();
             p    = (TYPE_Service_TMSx*) ((j==0) ? FIS_vFlashBlockTVServices() : FIS_vFlashBlockRadioServices());
             nSvc =              (word*) ((j==0) ? FIS_vnTvSvc()               : FIS_vnRadioSvc());
 
@@ -358,7 +364,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
               newServices = (TYPE_Service_TMSx*) (Buffer + ((j==0) ? FileHeader.TVServicesOffset : FileHeader.RadioServicesOffset));
               for (i = 0; i < ((j==0) ? FileHeader.NrTVServices : FileHeader.NrRadioServices); i++)
               {
-                if ((newServices[i].SatIdx < NrImpSatellites) && (newServices[i].TPIdx < NrImpTransponders))
+                if ((newServices[i].SatIdx < NrImpSatellites) && (newServices[i].TPIdx < GetNrTranspOfSat_TMSx((TYPE_SatInfo_TMSx*)(s + newServices[i].SatIdx * SIZE_SatInfo_TMSx))))
                 {
 //                  *nSvc = (word)(i+1);
                   if (Appl_AddSvcName)
