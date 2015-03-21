@@ -96,8 +96,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
       p = (TYPE_Service_TMSS*)(FIS_vFlashBlockTVServices());
       if(p)
       {
-        int Muell;
-        TAP_Channel_GetTotalNum(&FileHeader.NrTVServices, &Muell);
+        FileHeader.NrTVServices = FIS_vnTvSvc();
         ret = fwrite(&FileHeader.NrTVServices, sizeof(FileHeader.NrTVServices), 1, fExportFile) && ret;
         FileHeader.TVServicesOffset = ftell(fExportFile);
         if (FileHeader.NrTVServices > 0)
@@ -113,8 +112,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
       p = (TYPE_Service_TMSS*)(FIS_vFlashBlockRadioServices());
       if(p)
       {
-        int Muell;
-        TAP_Channel_GetTotalNum(&Muell, &FileHeader.NrRadioServices);
+        FileHeader.NrRadioServices = FIS_vnRadioSvc();
         ret = fwrite(&FileHeader.NrRadioServices, sizeof(FileHeader.NrRadioServices), 1, fExportFile) && ret;
         FileHeader.RadioServicesOffset = ftell(fExportFile);
         if (FileHeader.NrRadioServices > 0)
@@ -291,10 +289,11 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
 
           {
             // [Transponders]
-            TYPE_TpInfo_TMSS *p;
             byte             *s;
+            TYPE_TpInfo_TMSS *p;
             dword            *NrTransponders;
           
+            s = (byte*)FIS_vFlashBlockSatInfo();
             p = (TYPE_TpInfo_TMSS*)(FIS_vFlashBlockTransponderInfo());
             NrTransponders = (dword*)(p) - 1;
             if (ret && p)
@@ -307,7 +306,6 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
               // nicht die Satelliten importieren, sondern hier die TransponderNr hochzählen:
               if (OverwriteSatellites != 2)
               {
-                s = (byte*)FIS_vFlashBlockSatInfo();
                 int i;
                 for (i = 0; i < FileHeader.NrTransponders; i++)
                 {
@@ -339,20 +337,20 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
           {
             char*                 (*Appl_AddSvcName)(char const*);
             word                  (*Appl_SetProviderName)(char const*);
-            TYPE_Service_TMSx      *p;
             byte                   *s;
+            TYPE_Service_TMSx      *p;
             word                   *nSvc;
             int                     i;
 
             Appl_AddSvcName       = (void*)FIS_fwAppl_AddSvcName();
             Appl_SetProviderName  = (void*)FIS_fwAppl_SetProviderName();
 
-            char* SvcNameBuf = Buffer + FileHeader.ServiceNamesOffset;
-            char* PrvNameBuf = Buffer + FileHeader.ProviderNamesOffset;
-
-            s = (byte*)FIS_vFlashBlockSatInfo();
+            s    = (byte*)FIS_vFlashBlockSatInfo();
             p    = (TYPE_Service_TMSx*) ((j==0) ? FIS_vFlashBlockTVServices() : FIS_vFlashBlockRadioServices());
             nSvc =              (word*) ((j==0) ? FIS_vnTvSvc()               : FIS_vnRadioSvc());
+
+            char* SvcNameBuf = Buffer + FileHeader.ServiceNamesOffset;
+            char* PrvNameBuf = Buffer + FileHeader.ProviderNamesOffset;
 
             if (ret && p && nSvc)
             {
