@@ -16,6 +16,7 @@
 #include                "ChannelListSaver.h"
 #include                "ImExportText.h"
 
+int CurLine;
 
 char* ByteArrToStr(char *outStr, byte inArr[], int length)
 {
@@ -127,11 +128,11 @@ byte StrToFEC(char *inStr)
   if (ret <= 0xF)
   {
     if (ret == 0)
-      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect FEC-String: '%s'", inStr);
+      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect FEC-String: '%s' (line %d)", inStr, CurLine);
     return ret;
   }
   else
-    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid FEC-String: '%s'", inStr);
+    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid FEC-String: '%s' (line %d)", inStr, CurLine);
   return FEC_NO_CONV;
 }
 
@@ -185,11 +186,11 @@ byte StrToModulation(char *inStr)
   if (ret <= ((CurSystemType == ST_TMSS) ? 3 : 0xFF))
   {
     if (ret == 0)
-      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect Modulation-String: '%s'", inStr);
+      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect Modulation-String: '%s' (line %d)", inStr, CurLine);
     return ret;
   }
   else
-    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid Modulation-String: '%s'", inStr);
+    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid Modulation-String: '%s' (line %d)", inStr, CurLine);
   return 0;
 }
 
@@ -227,11 +228,11 @@ byte StrToVideoType(char *inStr)
   if (ret <= 0xFF)
   {
     if (ret == 0)
-      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect VideoType-String: '%s'", inStr);
+      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect VideoType-String: '%s' (line %d)", inStr, CurLine);
     return ret;
   }
   else
-    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid VideoType-String: '%s'", inStr);
+    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid VideoType-String: '%s' (line %d)", inStr, CurLine);
   return STREAM_UNKNOWN;
 }
 
@@ -271,11 +272,11 @@ word StrToAudioType(char *inStr)
   if (ret < 0xFFFF)
   {
     if (ret == 0)
-      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect AudioType-String: '%s'", inStr);
+      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect AudioType-String: '%s' (line %d)", inStr, CurLine);
     return ret;
   }
   else
-    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid AudioType-String: '%s'", inStr);
+    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid AudioType-String: '%s' (line %d)", inStr, CurLine);
   return STREAM_UNKNOWN;
 }
 
@@ -525,7 +526,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
   unsigned long         fs;
   tScanMode             CurMode = SM_Start;
   bool                  HeaderCheck[3];
-  int                   NrOfLines=0, z=0;
+  int                   NrOfLines = 0;
   int                   NrSats=0, NrImpSatellites=0, NrImpTransponders=0, NrImpTVServices=0, NrImpRadioServices=0, NrImpFavGroups=0;
   bool                  ret = FALSE;
   int                   p;
@@ -534,6 +535,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
   TRACEENTER();
   WriteLogCS(PROGRAM_NAME, "[Action] Importing settings (Text)...");
   WriteLogCS(PROGRAM_NAME, "----------------------------------------");
+  CurLine = 0;
 
 //  Buffer = (char*) malloc(BufSize);
 //  if (Buffer)
@@ -549,10 +551,9 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
     fs = ftell(fImportFile);
     rewind(fImportFile);
 
-    z = 0;
     while (ret && (getline(&Buffer, &BufSize, fImportFile) >= 0))
     {
-      z++;
+      CurLine++;
       //Interpret the following characters as remarks: //
       c = strstr(Buffer, "//");
       if(c) *c = '\0';
@@ -562,7 +563,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
       while (p && (Buffer[p-1] == '\r' || Buffer[p-1] == '\n' || Buffer[p-1] == ';'))
         Buffer[--p] = '\0';
 
-TAP_PrintNet("%d: %s\n", CurMode, Buffer);
+//TAP_PrintNet("%d: %s\n", CurMode, Buffer);
 
       // Prüfung der ersten Zeile
       if (CurMode == SM_Start)
@@ -617,7 +618,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
             CurMode = SM_Favorites;
           else
           {
-            WriteLogCSf(PROGRAM_NAME, "  Warning: Unknown section: %s! (line %d)", Buffer, z);
+            WriteLogCSf(PROGRAM_NAME, "  Warning: Unknown section: %s! (line %d)", Buffer, CurLine);
             CurMode = SM_Ignore;
           }
           continue;
@@ -750,7 +751,6 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
                 {
                   WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites from now...");
                   OverwriteSatellites = 2;
-                  NrImpSatellites = NrSats;
                 }
               }
             }
@@ -761,24 +761,24 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
               {
                 WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites from now...");
                 OverwriteSatellites = 2;
-                NrImpSatellites = NrSats;
               }
-              else ret = FALSE;
+              else 
+              {
+                ret = FALSE;
+                break;  // NrSats nicht hochzählen
+              }
             }
           }
           if (OverwriteSatellites == 2)  // auto oder nie
           {
             if (ret)
-              ret = FlashSatTablesSetInfo(NrImpSatellites, &CurSat);
+              ret = FlashSatTablesSetInfo(NrSats, &CurSat);
 
             if (ret)
               NrImpSatellites++;
             else
-              WriteLogCSf(PROGRAM_NAME, "  Error in satellite nr. %d! (line %d)", NrSats, z);
+              WriteLogCSf(PROGRAM_NAME, "  Error in satellite nr. %d! (line %d)", NrSats, CurLine);
           }
-          else
-            if (NrImpSatellites == 0)
-              NrImpSatellites = FlashSatTablesGetTotal();
           NrSats++;
           break;
         }
@@ -810,7 +810,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
             CurTransponder.Polarisation = 1;
           CurTransponder.ClockSync = CharToBool(CharClockSync);
 
-          if (ret && (CurTransponder.SatIndex < NrImpSatellites))
+          if (ret && (CurTransponder.SatIndex < NrSats))
             ret = (FlashTransponderTablesAdd(CurTransponder.SatIndex, &CurTransponder) != -1);
           else
             ret = FALSE;
@@ -818,7 +818,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           if (ret)
             NrImpTransponders++;
           else
-            WriteLogCSf(PROGRAM_NAME, "  Error in transponder nr. %d! (line %d)", NrImpTransponders, z);
+            WriteLogCSf(PROGRAM_NAME, "  Error in transponder nr. %d! (line %d)", NrImpTransponders, CurLine);
           break;
         }
 
@@ -853,7 +853,10 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           CurService.NameLock = CharToBool(CharNameLock);
           ret = StrToByteArr(CurService.unknown2, StringBuf3, sizeof(CurService.unknown2)) && ret;
 
-          if (ret && (CurService.SatIndex < NrImpSatellites) && (CurService.TransponderIndex < FlashTransponderTablesGetTotal(CurService.SatIndex)))
+          if (FileHeader.UTF8System != isUTFToppy())
+            ConvertUTFStr(CurService.ServiceName, sizeof(CurService.ServiceName), !FileHeader.UTF8System);
+
+          if (ret && (CurService.SatIndex < NrSats) && (CurService.TransponderIndex < FlashTransponderTablesGetTotal(CurService.SatIndex)))
             ret = FlashServiceAdd((CurMode==SM_TVServices) ? SVC_TYPE_Tv : SVC_TYPE_Radio, &CurService);
           else
             ret = FALSE;
@@ -861,7 +864,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           if (ret)
             (CurMode==SM_TVServices) ? NrImpTVServices++ : NrImpRadioServices++;
           else
-            WriteLogCSf(PROGRAM_NAME, "  Error in %s-service nr. %d! (line %d)", (CurMode==SM_TVServices) ? "TV" : "Radio", (CurMode==SM_TVServices) ? NrImpTVServices : NrImpRadioServices, z);
+            WriteLogCSf(PROGRAM_NAME, "  Error in %s-service nr. %d! (line %d)", (CurMode==SM_TVServices) ? "TV" : "Radio", (CurMode==SM_TVServices) ? NrImpTVServices : NrImpRadioServices, CurLine);
           break;
         }
 
@@ -904,7 +907,7 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
           if (ret)
             NrImpFavGroups++;
           else
-            WriteLogCSf(PROGRAM_NAME, "  Error in FavGroup nr. %d! (line %d)", NrImpFavGroups, z);
+            WriteLogCSf(PROGRAM_NAME, "  Error in FavGroup nr. %d! (line %d)", NrImpFavGroups, CurLine);
           break;
         }
 
@@ -914,9 +917,9 @@ TAP_PrintNet("%d: %s\n", CurMode, Buffer);
     }
     fclose(fImportFile);
 
-    WriteLogCSf(PROGRAM_NAME, "  %d of %d lines processed.", z, NrOfLines);
+    WriteLogCSf(PROGRAM_NAME, "  %d of %d lines processed.", CurLine, NrOfLines);
     WriteLogCSf(PROGRAM_NAME, "  %d of %d Satellites, %d of %d Transponders, %d of %d TVServices, %d of %d RadioServices, %d of %d FavGroups imported.",
-                               ((OverwriteSatellites==2) ? NrImpSatellites : 0), FileHeader.NrSatellites, NrImpTransponders, FileHeader.NrTransponders, NrImpTVServices, FileHeader.NrTVServices, NrImpRadioServices, FileHeader.NrRadioServices, NrImpFavGroups, FileHeader.NrFavGroups);
+                               NrImpSatellites, FileHeader.NrSatellites, NrImpTransponders, FileHeader.NrTransponders, NrImpTVServices, FileHeader.NrTVServices, NrImpRadioServices, FileHeader.NrRadioServices, NrImpFavGroups, FileHeader.NrFavGroups);
   }
   else
     WriteLogCS(PROGRAM_NAME, "  File not found!");

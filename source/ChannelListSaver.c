@@ -11,6 +11,7 @@
 #include                <stdlib.h>
 #include                <stdio.h>
 #include                <stdarg.h>
+#include                <string.h>
 #include                <tap.h>
 #include                <libFireBird.h>
 #include                "../../../../../Topfield/FireBirdLib/flash/FBLib_flash.h"
@@ -243,6 +244,31 @@ char SysTypeToStr(void)
     case ST_TMST:  return 'T';
     default:       return '?';
   }
+}
+
+bool ConvertUTFStr(char *SourceDestStr, int MaxLen, bool ToUnicode)
+{
+  char *TempStr = NULL;
+  TRACEENTER();
+
+  TempStr = (char*) TAP_MemAlloc(MaxLen * 2);
+  if (TempStr)
+  {
+    memset(TempStr, 0, sizeof(TempStr));
+    if (ToUnicode)
+      StrToUTF8(SourceDestStr, TempStr);
+    else
+      StrToISO(SourceDestStr, TempStr);
+
+    strncpy(SourceDestStr, TempStr, MaxLen-1);
+    SourceDestStr[MaxLen-1] = 0;
+
+    TAP_MemFree(TempStr);
+    TRACEEXIT();
+    return TRUE;
+  }
+  TRACEEXIT();
+  return FALSE;
 }
 
 bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
