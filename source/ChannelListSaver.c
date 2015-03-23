@@ -260,8 +260,10 @@ bool ConvertUTFStr(char *SourceDestStr, int MaxLen, bool ToUnicode)
     else
       StrToISO(SourceDestStr, TempStr);
 
-    strncpy(SourceDestStr, TempStr, MaxLen-1);
-    SourceDestStr[MaxLen-1] = 0;
+    TempStr[MaxLen-1] = 0;
+    if (ToUnicode && (TempStr[strlen(TempStr)-1] >= 127) && (TempStr[strlen(TempStr)-2] < 127))
+      TempStr[strlen(TempStr)-1] = 0;
+    strcpy(SourceDestStr, TempStr);
 
     TAP_MemFree(TempStr);
     TRACEEXIT();
