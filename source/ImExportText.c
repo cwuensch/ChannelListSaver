@@ -854,7 +854,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           ret = StrToByteArr(CurService.unknown2, StringBuf3, sizeof(CurService.unknown2)) && ret;
 
           if (FileHeader.UTF8System != isUTFToppy())
-            ConvertUTFStr(CurService.ServiceName, sizeof(CurService.ServiceName), !FileHeader.UTF8System);
+            ConvertUTFStr(CurService.ServiceName, CurService.ServiceName, sizeof(CurService.ServiceName), !FileHeader.UTF8System);
 
           if (ret && (CurService.SatIndex < NrSats) && (CurService.TransponderIndex < FlashTransponderTablesGetTotal(CurService.SatIndex)))
             ret = FlashServiceAdd((CurMode==SM_TVServices) ? SVC_TYPE_Tv : SVC_TYPE_Radio, &CurService);

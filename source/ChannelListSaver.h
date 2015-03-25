@@ -86,7 +86,7 @@ dword TAP_EventHandler(word event, dword param1, dword param2);
 void  WriteLogCS(char *ProgramName, char *s);
 void  WriteLogCSf(char *ProgramName, const char *format, ...);
 char  SysTypeToStr(void);
-bool  ConvertUTFStr(char *SourceDestStr, int MaxLen, bool ToUnicode);
+bool  ConvertUTFStr(char *DestStr, char *SourceStr, int MaxLen, bool ToUnicode);
 bool  HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import);
 
 int   ShowConfirmationDialog(char *MessageStr);

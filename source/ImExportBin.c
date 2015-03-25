@@ -351,6 +351,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
             word                  (*Appl_SetProviderName)(char const*);
             TYPE_Service_TMSx      *p;
             word                   *nSvc;
+            char                    SvcName[MAX_SvcName + 1], *pSvcName;
             int                     i;
 
             Appl_AddSvcName       = (void*)FIS_fwAppl_AddSvcName();
@@ -379,9 +380,11 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
                   {
                     if (newServices[i].NameOffset < (dword)FileHeader.ServiceNamesLength)
                     {
+                      pSvcName = &SvcNameBuf[newServices[i].NameOffset];
                       if (FileHeader.UTF8System != isUTFToppy())
-                        ConvertUTFStr(&SvcNameBuf[newServices[i].NameOffset], MAX_SvcName+1, !FileHeader.UTF8System);
-                      newServices[i].NameOffset = (dword)Appl_AddSvcName(&SvcNameBuf[newServices[i].NameOffset]);
+                        if (ConvertUTFStr(SvcName, pSvcName, MAX_SvcName+1, !FileHeader.UTF8System))
+                          pSvcName = SvcName;
+                      newServices[i].NameOffset = (dword)Appl_AddSvcName(pSvcName);
                     }
                     else
                       newServices[i].NameOffset = (dword)Appl_AddSvcName("* No Name *");

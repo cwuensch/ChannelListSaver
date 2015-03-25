@@ -246,7 +246,7 @@ char SysTypeToStr(void)
   }
 }
 
-bool ConvertUTFStr(char *SourceDestStr, int MaxLen, bool ToUnicode)
+bool ConvertUTFStr(char *DestStr, char *SourceStr, int MaxLen, bool ToUnicode)
 {
   char *TempStr = NULL;
   TRACEENTER();
@@ -256,14 +256,23 @@ bool ConvertUTFStr(char *SourceDestStr, int MaxLen, bool ToUnicode)
   {
     memset(TempStr, 0, sizeof(TempStr));
     if (ToUnicode)
-      StrToUTF8(SourceDestStr, TempStr);
+    {
+      if (SourceStr[0] == 0x05) SourceStr++;
+      StrToUTF8(SourceStr, TempStr);
+    }
     else
-      StrToISO(SourceDestStr, TempStr);
+      StrToISO(SourceStr, TempStr);
 
+    if (!ToUnicode && (SourceStr[0] != 0x05) && (strlen(TempStr) < strlen(SourceStr)))
+    {
+      DestStr[0] = 0x05;
+      DestStr++;
+      MaxLen--;
+    }
     TempStr[MaxLen-1] = 0;
-    if (ToUnicode && (TempStr[strlen(TempStr)-1] >= 127) && (TempStr[strlen(TempStr)-2] < 127))
+    if (ToUnicode && ((TempStr[strlen(TempStr)-1] & 0xC0) == 0xC0))
       TempStr[strlen(TempStr)-1] = 0;
-    strcpy(SourceDestStr, TempStr);
+    strcpy(DestStr, TempStr);
 
     TAP_MemFree(TempStr);
     TRACEEXIT();
