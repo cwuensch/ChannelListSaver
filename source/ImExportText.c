@@ -16,6 +16,21 @@
 #include                "ChannelListSaver.h"
 #include                "ImExportText.h"
 
+
+static char*  ByteArrToStr(char *outStr, byte inArr[], int length);
+static bool   StrToByteArr(byte *outArr, char *inStr, int length);
+static char   BoolToChar(bool inValue);
+static bool   CharToBool(char inValue);
+static char*  FECtoStr(byte inFEC);
+static byte   StrToFEC(char *inStr);
+static char*  ModulationToStr(byte inMod);
+static byte   StrToModulation(char *inStr);
+static char*  VideoTypeToStr(byte inVideo);
+static byte   StrToVideoType(char *inStr);
+static char*  AudioTypeToStr(word inAudio);
+static word   StrToAudioType(char *inStr);
+
+
 int CurLine;
 
 char* ByteArrToStr(char *outStr, byte inArr[], int length)

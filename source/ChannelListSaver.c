@@ -6,6 +6,8 @@
 //#undef malloc
 //#undef free
 
+//#define __ALTEFBLIB__
+
 #define _GNU_SOURCE
 //#define  STACKTRACE     TRUE
 #include                <stdlib.h>
@@ -31,21 +33,48 @@ TAP_ETCINFO             (__DATE__);
 typedef enum
 {
   LS_UnknownSystemType,
-  LS_ImportSysQuestion,
-  LS_ImportBinQuestion,
-  LS_ImportTxtQuestion,
+  LS_ImportQuestion,
+  LS_Binary,
+  LS_Text,
+  LS_System,
   LS_AnswerImport,
   LS_AnswerOverwrite,
   LS_AnswerCancel,
-  LS_ImportBinSuccess,
-  LS_ImportTxtSuccess,
-  LS_ImportError,
   LS_ExportSuccess,
+  LS_ImportSuccess,
   LS_ExportError,
+  LS_ImportError,
   LS_NrStrings
 } tLngStrings;
 
-void OSDMenuMessageBoxDoScrollOver(word *event, dword *param1);
+char* DefaultStrings[LS_NrStrings] =
+{
+  "Unknown SystemType.\nPlease check FirmwareTMS.dat!",
+  "%s file '%s' found.\nDo you want to import it?",
+  "Binary",
+  "Text",
+  "System",
+  "Import",
+  "Overwrite",
+  "Cancel",
+  "Settings successfully exported.",
+  "Settings (%s) imported.",
+  "Error during export!\nPlease check the log file...",
+  "Error during import!\nPlease check the log file..."
+ };
+
+#define LangGetString(x)  LangGetStringDefault(x, DefaultStrings[x])
+
+
+//static void  OSDMenuMessageBoxDoScrollOver(word *event, dword *param1);
+
+static int   ShowConfirmationDialog(char *MessageStr);
+static void  ShowErrorMessage(char *MessageStr, char *TitleStr);
+static char  SysTypeToStr(void);
+static bool  InitSystemType(void);
+static void  LoadINI(void);
+static void  SaveINI(void);
+
 
 // Globale Variablen
 int                     ImportFormat = 0;  // 0 - Binary, 1 - Text, 2 - System
@@ -58,7 +87,6 @@ dword                   LastMessageBoxKey;
 // ============================================================================
 //                              IMPLEMENTIERUNG
 // ============================================================================
-
 int TAP_Main(void)
 {
   char                  TempStr[512];
@@ -81,7 +109,7 @@ int TAP_Main(void)
   // Load Language Strings
   if(!LangLoadStrings(LNGFILENAME, LS_NrStrings, LAN_English, PROGRAM_NAME))
   {
-    WriteLogCSf(PROGRAM_NAME, "Language file '%s' not found!\r\n", LNGFILENAME);
+/*    WriteLogCSf(PROGRAM_NAME, "Language file '%s' not found!\r\n", LNGFILENAME);
     OSDMenuInfoBoxShow(PROGRAM_NAME " " VERSION, "Language file not found!", 500);
     CSShowMessageBox = TRUE;
     do
@@ -91,8 +119,30 @@ int TAP_Main(void)
     } while(OSDMenuInfoBoxIsVisible());
 
     TRACEEXIT();
-    return 0;
+    return 0;  */
   }
+
+  // DEBUG-AUSGABEN
+  if ((void*)FIS_fwAppl_ExportChData() == NULL)
+    WriteLogCS("Warning", "Firmware function FIS_fwAppl_ExportChData() not found!");
+  if ((void*)FIS_fwAppl_ImportChData() == NULL)
+    WriteLogCS("Warning", "Firmware function FIS_fwAppl_ImportChData() not found!");
+  if ((void*)FIS_fwTimeToLinux() == NULL)
+    WriteLogCS("DEBUG", "Firmware function FIS_fwTimeToLinux() not found!");
+
+/*  dword (*_PvrTimeToLinux)(dword) = NULL;
+  _PvrTimeToLinux = (void*)FIS_fwTimeToLinux();
+  if(_PvrTimeToLinux)
+    WriteLogCS("DEBUG", "_PvrTimeToLinux gefunden!");
+
+  byte Sec;
+  dword CurTime = Now(&Sec);
+  WriteLogCSf("DEBUG", "Current time: Topfield=%u", CurTime);
+  dword CurLinuxTime = PvrTimeToLinux(CurTime) + Sec;
+  WriteLogCSf("DEBUG", "Current time: PVRtoLinux=%u, %s", CurLinuxTime, ctime((time_t*) &CurLinuxTime));
+  dword CurUnixTime = TF2UnixTime(CurTime) + Sec;
+  WriteLogCSf("DEBUG", "Current time: TF2UnixTime=%u, %s", CurUnixTime, ctime((time_t*) &CurUnixTime)); */
+
 
   // Main-Funktion
   if (InitSystemType())
@@ -103,7 +153,7 @@ int TAP_Main(void)
 
     if (TAP_Hdd_Exist("Settings.std") && (ImportFormat == 2 || (!TAP_Hdd_Exist(EXPORTFILENAME ".dat") && !TAP_Hdd_Exist(EXPORTFILENAME ".txt"))))
     {
-      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportSysQuestion), "Settings.std");
+      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_System), "Settings.std");
       Answer = ShowConfirmationDialog(TempStr);
       if (Answer == 1)
         ret = HDD_ImExportChData("Settings.std", TAPFSROOT LOGDIR, TRUE);
@@ -111,7 +161,7 @@ int TAP_Main(void)
 
     else if (TAP_Hdd_Exist(EXPORTFILENAME ".txt") && (ImportFormat == 1 || !TAP_Hdd_Exist(EXPORTFILENAME ".dat")))
     {
-      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportTxtQuestion), EXPORTFILENAME ".txt");
+      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_Text), EXPORTFILENAME ".txt");
       Answer = ShowConfirmationDialog(TempStr);
       if (Answer == 1)
       {
@@ -124,7 +174,10 @@ int TAP_Main(void)
           ExportSettings("Debug_AfterTxtImport.dat", TAPFSROOT LOGDIR);
         #endif
         if (ret)
-          ShowErrorMessage(LangGetString(LS_ImportTxtSuccess), NULL);
+        {
+          TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportSuccess), LangGetString(LS_Text));
+          ShowErrorMessage(TempStr, NULL);
+        }
         else
           ShowErrorMessage(LangGetString(LS_ImportError), NULL);
       }
@@ -132,7 +185,7 @@ int TAP_Main(void)
 
     else if(TAP_Hdd_Exist(EXPORTFILENAME ".dat"))
     {
-      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportBinQuestion), EXPORTFILENAME ".dat");
+      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_Binary), EXPORTFILENAME ".dat");
       Answer = ShowConfirmationDialog(TempStr);
       if (Answer == 1)
       {
@@ -145,7 +198,10 @@ int TAP_Main(void)
           ExportSettings("Debug_AfterBinImport.dat", TAPFSROOT LOGDIR);
         #endif
         if (ret)
-          ShowErrorMessage(LangGetString(LS_ImportBinSuccess), NULL);
+        {
+          TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportSuccess), LangGetString(LS_Binary));
+          ShowErrorMessage(TempStr, NULL);
+        }
         else
           ShowErrorMessage(LangGetString(LS_ImportError), NULL);
       }
@@ -156,7 +212,7 @@ int TAP_Main(void)
 //      WriteLogCS(PROGRAM_NAME, "[Aktion] Exportiere Settings...");
       ret = ExportSettings(EXPORTFILENAME ".dat",      TAPFSROOT LOGDIR);
       ret = ExportSettings_Text(EXPORTFILENAME ".txt", TAPFSROOT LOGDIR) && ret;
-      ret = HDD_ImExportChData("Settings.std",         TAPFSROOT LOGDIR, FALSE) && ret;
+      ret =(HDD_ImExportChData("Settings.std",         TAPFSROOT LOGDIR, FALSE) || ((void*)FIS_fwAppl_ExportChData() == NULL)) && ret;
       if (!ret)
         ShowErrorMessage(LangGetString(LS_ExportError), NULL);
     }
@@ -183,7 +239,7 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
       if(OSDMenuMessageBoxIsVisible())
       {
         if(event == EVT_KEY) LastMessageBoxKey = param1;
-        #ifndef FBLIB_OLD
+        #ifdef __ALTEFBLIB__
           OSDMenuMessageBoxDoScrollOver(&event, &param1);
         #endif
       }
@@ -206,7 +262,7 @@ void WriteLogCS(char *ProgramName, char *s)
 {
   static bool FirstCall = TRUE;
 
-  HDD_TAP_PushDir();
+//  HDD_TAP_PushDir();
 
   if(FirstCall)
   {
@@ -219,7 +275,7 @@ void WriteLogCS(char *ProgramName, char *s)
 
   TAP_Hdd_ChangeDir(LOGDIR);
   LogEntry(PROGRAM_NAME ".log", ProgramName, TRUE, TIMESTAMP_YMDHMS, s);
-  HDD_TAP_PopDir();
+//  HDD_TAP_PopDir();
 }
 void WriteLogCSf(char *ProgramName, const char *format, ...)
 {
@@ -257,13 +313,17 @@ bool ConvertUTFStr(char *DestStr, char *SourceStr, int MaxLen, bool ToUnicode)
     memset(TempStr, 0, sizeof(TempStr));
     if (ToUnicode)
     {
-      if (SourceStr[0] == 0x05) SourceStr++;
-      StrToUTF8(SourceStr, TempStr);
+      #ifdef __ALTEFBLIB__
+        if (SourceStr[0] < 0x20) SourceStr++;
+        StrToUTF8(SourceStr, TempStr);
+      #else
+        StrToUTF8(SourceStr, TempStr, 9);
+      #endif
     }
     else
       StrToISO(SourceStr, TempStr);
 
-    if (!ToUnicode && (SourceStr[0] != 0x05) && (strlen(TempStr) < strlen(SourceStr)))
+    if (!ToUnicode && (SourceStr[0] > 0x20) && (strlen(TempStr) < strlen(SourceStr)))
     {
       DestStr[0] = 0x05;
       DestStr++;
@@ -284,7 +344,8 @@ bool ConvertUTFStr(char *DestStr, char *SourceStr, int MaxLen, bool ToUnicode)
 
 bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
 {
-  tDirEntry             FolderStruct;
+  static tDirEntry     *_hddTapFolder = NULL;
+  tDirEntry             FolderStruct, OldTapFolder;
   char                  AbsFileName[FBLIB_DIR_SIZE]; //, TmpFileName[FBLIB_DIR_SIZE];
   bool                  ret = FALSE;
 
@@ -293,31 +354,42 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
   WriteLogCSf(PROGRAM_NAME, (Import ? "[Action] Importing '%s' (System)..." : "[Action] Exporting '%s' (System)..."), FileName);
   WriteLogCS(PROGRAM_NAME, "----------------------------------------");
 
-  TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", &AbsDirectory[21], FileName);
-//  TAP_SPrint(TmpFileName, sizeof(TmpFileName), TAPFSROOT "/ProgramFiles/%s", FileName);
-//  rename(AbsFileName, TmpFileName); 
+//  TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", &AbsDirectory[21], FileName);
+
+  //Get the current TAP folder variable
+  if(!_hddTapFolder)
+  {
+    _hddTapFolder = (tDirEntry*)FIS_vHddTapFolder();
+    if(!_hddTapFolder)
+    {
+      TRACEEXIT();
+      return FALSE;
+    }
+  }
 
   //Initialize the directory structure
   memset(&FolderStruct, 0, sizeof(tDirEntry));
   FolderStruct.Magic = 0xbacaed31;
 
   //Save the current directory resources and change into our directory (current directory of the TAP)
-//  ApplHdd_SaveWorkFolder();
-//  if (!ApplHdd_SelectFolder(&FolderStruct, &AbsDirectory[1]))   //do not include the leading slash
+  ApplHdd_SaveWorkFolder();
+  if (!ApplHdd_SelectFolder(&FolderStruct, &AbsDirectory[1]))   //do not include the leading slash
   {
-//    ApplHdd_SetWorkFolder(&FolderStruct);
+    ApplHdd_SetWorkFolder(&FolderStruct);
+    memcpy(&OldTapFolder, (void*)_hddTapFolder, sizeof(OldTapFolder));
+    memcpy((void*)_hddTapFolder, &FolderStruct, sizeof(FolderStruct));
     if (Import)
-      ret = Appl_ImportChData(AbsFileName);
+      ret = Appl_ImportChData(FileName);
     else
-      ret = Appl_ExportChData(AbsFileName);
+      ret = Appl_ExportChData(FileName);
+    memcpy((void*)_hddTapFolder, &OldTapFolder, sizeof(OldTapFolder));
   }
-//  ApplHdd_RestoreWorkFolder();
+  ApplHdd_RestoreWorkFolder();
 
-//  rename(TmpFileName, AbsFileName);
   if (ret)
-    WriteLogCSf(PROGRAM_NAME, (Import ? "--> Import '%s' successful." : "--> Export '%s' successful."), AbsFileName);
+    WriteLogCSf(PROGRAM_NAME, (Import ? "--> Import '%s' successful." : "--> Export '%s' successful."), FileName);
   else
-    WriteLogCSf(PROGRAM_NAME, (Import ? "--> Error during import '%s'!" : "--> Error during export '%s'!"), AbsFileName);
+    WriteLogCSf(PROGRAM_NAME, (Import ? "--> Error during import '%s'!" : "--> Error during export '%s'!"), FileName);
   HDD_TAP_PopDir();
 
   TRACEEXIT();
@@ -346,7 +418,7 @@ void DebugServiceNames(char* FileName)
 // ----------------------------------------------------------------------------
 //                           MessageBox-Funktionen
 // ----------------------------------------------------------------------------
-#ifndef FBLIB_OLD
+#ifdef __ALTEFBLIB__
   #define STDSTRINGSIZE   256
   #define MAXMBBUTTONS    5
 
