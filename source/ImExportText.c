@@ -716,24 +716,26 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           ret = (sscanf(Buffer, "%*i ; %15[^;\r\n] ; %hu ; %hu ; %n",
                                   CurSat.SatName, &CurSat.SatPosition, &CurSat.NrOfTransponders, &BytesRead) == 3) && ret;
           p += BytesRead;
-          BytesRead = 0;
           RTrim(CurSat.SatName);
+          BytesRead = 0;
+          StringBuf1[0] = '\0'; StringBuf2[0] = '\0';
 
           // LNBxSupply; LNBxDiSEqC10; LNBxDiSEqC11; LNBxDiSeqC12; LNBxDiSEqC12Flags; LNBxUniversal; LNBxSwitch22; LNBxLowBand; LNBxHBFrq; LNBxLoop
           ret = (sscanf(&Buffer[p], "%c ; %c ;  %hhu ; %hhu ;  %hhu ; %hhu ;  %hhu ; %hhu ;  %9[^;\r\n] ; %9[^;\r\n] ;  %c ; %c ;  %c ; %c ;  %hu ; %hu ;  %hu ; %hu ;  %c ; %c ; %n",
                                       &LNBSupply[0], &LNBSupply[1],  &DiSEqC10[0], &DiSEqC10[1],  &CurSat.LNB[0].DiSEqC11, &CurSat.LNB[1].DiSEqC11,  &CurSat.LNB[0].DiSEqC12, &CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  &UniversalLNB[0], &UniversalLNB[1],  &Switch22[0], &Switch22[1],  &LowBand[0], &LowBand[1],  &CurSat.LNB[0].HBFrq, &CurSat.LNB[1].HBFrq,  &LoopThrough[0], &LoopThrough[1], &BytesRead) == 20) && ret;
           p += BytesRead;
-          BytesRead = 0;
           ret = StrToByteArr(CurSat.LNB[0].DiSEqC12Flags, StringBuf1, sizeof(CurSat.LNB[0].DiSEqC12Flags)) && ret;
           ret = StrToByteArr(CurSat.LNB[1].DiSEqC12Flags, StringBuf2, sizeof(CurSat.LNB[1].DiSEqC12Flags)) && ret;
+          BytesRead = 0;
+          StringBuf1[0] = '\0'; StringBuf2[0] = '\0';
 
           // LNBxUnused1; LNBxUnused2; LNBxUnused3; LNBxUnused4; LNBxUnused5;
           ret = (sscanf(&Buffer[p], "%hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %15[^;\r\n] ; %15[^;\r\n] ; %n",
                                       &unused1[0], &unused1[1],  &unused2[0], &unused2[1],  &unused3[0], &unused3[1],  &unused4[0], &unused4[1],  StringBuf1, StringBuf2, &BytesRead) == 10) && ret;
           p += BytesRead;
-          BytesRead = 0;
           ret = StrToByteArr(CurSat.LNB[0].unused5, StringBuf1, sizeof(CurSat.LNB[0].unused5)) && ret;
           ret = StrToByteArr(CurSat.LNB[1].unused5, StringBuf2, sizeof(CurSat.LNB[1].unused5)) && ret;
+          StringBuf1[0] = '\0'; StringBuf2[0] = '\0';
 
           int i;
           for(i = 0; i <= 1; i++)
@@ -814,6 +816,8 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           char                   CharPilot, CharPolarisation, CharClockSync;
 
           memset(&CurTransponder, 0, sizeof(tFlashTransponderTable));
+          StringBuf1[0] = '\0'; StringBuf2[0] = '\0'; StringBuf3[0] = '\0';
+
           ret = (sscanf(Buffer, "%*i ; %hhu ; %lu ; %hu ; %hhu ; %hhu ; %hu ; %hi ; %hi ; "      // Nr; SatIdx; Frequency; SymbRate; Channel; BW; TSID; ONWID; NWID
                                 "%c ; %8[^;\r\n] ; %8[^;\r\n] ; "                                // Pilot; FEC; Modulation
                                 "%6[^;\r\n] ; %c ; %hhu ; %c ; "                                 // System; Pol; LPHP; ClockSync
@@ -854,6 +858,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           char                   CharFlagDel, CharFlagCAS, CharFlagLock, CharFlagSkip, CharNameLock;
 
           memset(&CurService, 0, sizeof(tFlashService));
+          StringBuf1[0] = '\0'; StringBuf2[0] = '\0'; StringBuf3[0] = '\0';
 
           ret = (sscanf(Buffer, "%*i ; %23[^;\r\n] ; %hhu ; %hu ; %hhu ; "                         // Nr; ServiceName; SatIndex; TransponderIndex; Tuner;
                                 "%8[^;\r\n] ; %8[^;\r\n] ; %hu ; %hu ; %hu ; %hu ; %hu ; "         // VideoStreamType; AudioStreamType; ServiceID; PMTPID; PCRPID; VideoPID; AudioPID;
