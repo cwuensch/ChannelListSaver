@@ -1,5 +1,7 @@
-#define _FILE_OFFSET_BITS  64
+#define _LARGEFILE_SOURCE
+#define _LARGEFILE64_SOURCE
 #define __USE_LARGEFILE64  1
+#define _FILE_OFFSET_BITS  64
 #ifdef _MSC_VER
   #define __const const
 #endif
@@ -8,12 +10,13 @@
 
 //#define __ALTEFBLIB__
 
-#define _GNU_SOURCE
 //#define  STACKTRACE     TRUE
 #include                <stdlib.h>
 #include                <stdio.h>
 #include                <stdarg.h>
 #include                <string.h>
+#include                <utime.h>
+#include                <sys/stat.h>
 #include                <tap.h>
 #include                <libFireBird.h>
 #include                "../../../../../Topfield/FireBirdLib/flash/FBLib_flash.h"
@@ -342,11 +345,35 @@ bool ConvertUTFStr(char *DestStr, char *SourceStr, int MaxLen, bool ToUnicode)
   return FALSE;
 }
 
+bool HDD_SetFileDateTime(char const *FileName, char const *AbsDirectory, dword NewDateTime)
+{
+  char                  AbsFileName[FBLIB_DIR_SIZE];
+  struct stat64         statbuf;
+  struct utimbuf        utimebuf;
+
+  if(FileName && AbsDirectory && (NewDateTime > 0xd0790000))
+  {
+    TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
+    if(lstat64(AbsFileName, &statbuf) == 0)
+    {
+      utimebuf.actime = statbuf.st_atime;
+      utimebuf.modtime = PvrTimeToLinux(NewDateTime);
+      utime(AbsFileName, &utimebuf);
+      TRACEEXIT();
+      return TRUE;
+    }
+  }
+  TRACEEXIT();
+  return FALSE;
+}
+
 bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
 {
+//  static char           AbsDir2[FBLIB_DIR_SIZE];
   static tDirEntry     *_hddTapFolder = NULL;
   tDirEntry             FolderStruct, OldTapFolder;
-  char                  AbsFileName[FBLIB_DIR_SIZE]; //, TmpFileName[FBLIB_DIR_SIZE];
+  char                  AbsFileName[FBLIB_DIR_SIZE];
+//  char                 *RelFileName = NULL;
   bool                  ret = FALSE;
 
   TRACEENTER();
@@ -354,8 +381,12 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
   WriteLogCSf(PROGRAM_NAME, (Import ? "[Action] Importing '%s' (System)..." : "[Action] Exporting '%s' (System)..."), FileName);
   WriteLogCS(PROGRAM_NAME, "----------------------------------------");
 
-//  TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", &AbsDirectory[21], FileName);
+  TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
+//  RelFileName = &AbsFileName[21];
 
+  // Create/empty the file, if not exists
+  fclose(fopen(AbsFileName, "w"));
+  
   //Get the current TAP folder variable
   if(!_hddTapFolder)
   {
@@ -373,7 +404,8 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
 
   //Save the current directory resources and change into our directory (current directory of the TAP)
   ApplHdd_SaveWorkFolder();
-  if (!ApplHdd_SelectFolder(&FolderStruct, &AbsDirectory[1]))   //do not include the leading slash
+//  strcpy(AbsDir2, &AbsDirectory[1]);  // must be static! Do not include the leading slash!
+  if (!ApplHdd_SelectFolder(&FolderStruct, &AbsDirectory[1]))
   {
     ApplHdd_SetWorkFolder(&FolderStruct);
     memcpy(&OldTapFolder, (void*)_hddTapFolder, sizeof(OldTapFolder));
@@ -387,9 +419,15 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
   ApplHdd_RestoreWorkFolder();
 
   if (ret)
+  {
+    HDD_SetFileDateTime(FileName, AbsDirectory, Now(NULL));
     WriteLogCSf(PROGRAM_NAME, (Import ? "--> Import '%s' successful." : "--> Export '%s' successful."), FileName);
+  }
   else
+  {
+    remove(AbsFileName);
     WriteLogCSf(PROGRAM_NAME, (Import ? "--> Error during import '%s'!" : "--> Error during export '%s'!"), FileName);
+  }
   HDD_TAP_PopDir();
 
   TRACEEXIT();

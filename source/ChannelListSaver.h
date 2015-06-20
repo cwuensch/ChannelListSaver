@@ -4,7 +4,7 @@
 #define TAP_SPrint    snprintf
 
 #define PROGRAM_NAME          "ChannelListSaver"
-#define VERSION               "0.6b"
+#define VERSION               "0.6d"
 #define TAPID                 0x2A0A0002
 #define AUTHOR                "chris86"
 //#define DESCRIPTION           "Im-/Export of Sat-, Transponder- & Channel-Lists"
@@ -86,6 +86,7 @@ dword TAP_EventHandler(word event, dword param1, dword param2);
 void  WriteLogCS(char *ProgramName, char *s);
 void  WriteLogCSf(char *ProgramName, const char *format, ...);
 bool  ConvertUTFStr(char *DestStr, char *SourceStr, int MaxLen, bool ToUnicode);
+bool  HDD_SetFileDateTime(char const *FileName, char const *AbsDirectory, dword NewDateTime);
 
 bool  HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import);
 int   GetLengthOfServiceNames(int *NrServiceNames);

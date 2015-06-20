@@ -1,5 +1,7 @@
-#define _FILE_OFFSET_BITS  64
+#define _LARGEFILE_SOURCE
+#define _LARGEFILE64_SOURCE
 #define __USE_LARGEFILE64  1
+#define _FILE_OFFSET_BITS  64
 #ifdef _MSC_VER
   #define __const const
 #endif
@@ -174,7 +176,7 @@ char* ModulationToStr(byte inMod)
     if(inMod == 0) return "-";
 
   static char outStr[10];
-  sprintf(outStr, "%#4x", inMod);
+  sprintf(outStr, "%#4hhx", inMod);
   return outStr;
 }
 byte StrToModulation(char *inStr)
@@ -223,7 +225,7 @@ char* VideoTypeToStr(byte inVideo)
     case STREAM_VIDEO_VC1SM:           return "VC1SM";
     case STREAM_UNKNOWN:               return "unknown";
     default:
-      sprintf(outStr, "%#4x", inVideo);
+      sprintf(outStr, "%#4hhx", inVideo);
       return outStr;
   }
 }
@@ -266,7 +268,7 @@ char* AudioTypeToStr(word inAudio)
     case STREAM_AUDIO_MPEG4_DTS:       return "DTS";
     case STREAM_UNKNOWN:               return "unknown";
     default:
-      sprintf(outStr, "%#6x", inAudio);
+      sprintf(outStr, "%#6hx", inAudio);
       return outStr;
   }
 }
@@ -309,7 +311,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
   WriteLogCS(PROGRAM_NAME, "----------------------------------------");
 
   TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
-  fExportFile = fopen(AbsFileName, "w");
+  fExportFile = fopen(AbsFileName, "wb");
   if(fExportFile)
   {
     ret = TRUE;
@@ -376,13 +378,13 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
           // LNBxUnused1; LNBxUnused2; LNBxUnused3; LNBxUnused4; LNBxUnused5;
           ByteArrToStr(StringBuf1, CurSat.LNB[0].unused5, sizeof(CurSat.LNB[0].unused5));
           ByteArrToStr(StringBuf2, CurSat.LNB[1].unused5, sizeof(CurSat.LNB[1].unused5));
-          ret = (fprintf(fExportFile, "%#4x; %#4x;   %#4x; %#4x;   %#4x; %#4x;   %#4x; %#4x;   %s; %s;    ",
+          ret = (fprintf(fExportFile, "%#4hhx; %#4hhx;   %#4hhx; %#4hhx;   %#4hhx; %#4hhx;   %#4hhx; %#4hhx;   %s; %s;    ",
                                        CurSat.LNB[0].unused1, CurSat.LNB[1].unused1,  CurSat.LNB[0].unused2, CurSat.LNB[1].unused2,  CurSat.LNB[0].unused3, CurSat.LNB[1].unused3,  CurSat.LNB[0].unused4, CurSat.LNB[1].unused4,  StringBuf1, StringBuf2) > 0) && ret;
 
           // Unused1; Unknown1; Unused2
           ByteArrToStr(StringBuf1, CurSat.unknown1, sizeof(CurSat.unknown1));
           ByteArrToStr(StringBuf2, CurSat.unused2, sizeof(CurSat.unused2));
-          ret = (fprintf(fExportFile, "%#6x;  %s;  %s" CRLF,
+          ret = (fprintf(fExportFile, "%#6hx;  %s;  %s" CRLF,
                                        CurSat.unused1, StringBuf1, StringBuf2) > 0) && ret;
           z++;
         }
@@ -416,7 +418,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
             ret = (fprintf(fExportFile, "%4d;    %3hhu; %10lu;    %5hu;     %3hhu; %3hhu; %5hu; %5hu; %5hu;     "  // Nr; SatIdx; Frequency; SymbRate; Channel; BW; TSID; ONWID; NWID
                                         "%c; %8s;   %8s;  "                                                        // Pilot; FEC; Modulation
                                         "%5s;   %c;  %3hhu;         %c;   "                                        // System; Pol; LPHP; ClockSync
-                                        "%#6x;   %#6x;     %#4x;   %#6x" CRLF,                                     // Unknown1; Unknown2; Unknown3; Unknown4
+                                        "%#6hx;   %#6hx;     %#4hhx;   %#6hx" CRLF,                                // Unknown1; Unknown2; Unknown3; Unknown4
                                          j, CurTransponder.SatIndex, CurTransponder.Frequency, CurTransponder.SymbolRate, CurTransponder.ChannelNr, CurTransponder.Bandwidth, CurTransponder.TSID, CurTransponder.OriginalNetworkID, CurTransponder.NetworkID,
                                          BoolToChar(CurTransponder.Pilot), FECtoStr(CurTransponder.FEC), ModulationToStr(CurTransponder.Modulation),
                                          (CurTransponder.ModSystem ? "DVBS2" : (CurSystemType==ST_TMSS ? "DVBS" : "-")), (CurTransponder.Polarisation ? 'H' : (CurSystemType==ST_TMSS ? 'V' : '-')), CurTransponder.LPHP, BoolToChar(CurTransponder.ClockSync),
@@ -459,7 +461,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
           ByteArrToStr(StringBuf, CurService.unknown2, sizeof(CurService.unknown2));
           ret = (fprintf(fExportFile, "%4d; %-24s;    %3hhu;  %5hu;   %3hhu;  "                                    // Nr; ServiceName; SatIndex; TransponderIndex; Tuner;
                                       "%8s;  %8s;  %5hu;  %5hu;  %5hu;  %5hu;  %5hu; "                             // VideoStreamType; AudioStreamType; ServiceID; PMTPID; PCRPID; VideoPID; AudioPID;
-                                      "%5hu;    %c;    %c;     %c;     %c;       %c; %#6x; %s;  %s" CRLF,          // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
+                                      "%5hu;    %c;    %c;     %c;     %c;       %c; %#6hx; %s;  %s" CRLF,         // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
                                        i, CurService.ServiceName, CurService.SatIndex, CurService.TransponderIndex, CurService.Tuner,
                                        VideoTypeToStr(CurService.VideoStreamType), AudioTypeToStr(CurService.AudioStreamType), CurService.ServiceID, CurService.PMTPID, CurService.PCRPID, CurService.VideoPID, CurService.AudioPID,
                                        CurService.LCN, BoolToChar(CurService.FlagDelete), BoolToChar(CurService.FlagCAS), BoolToChar(CurService.FlagLock), BoolToChar(CurService.FlagSkip), BoolToChar(CurService.NameLock), CurService.Flags2, StringBuf, CurService.ProviderName) > 0) && ret;
@@ -508,13 +510,14 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
     FileSize = ftell(fExportFile);
     fclose(fExportFile);
 
-    fExportFile = fopen(AbsFileName, "r+");
+    fExportFile = fopen(AbsFileName, "r+b");
     if(fExportFile)
     {
       fseek(fExportFile, FileSizePos, SEEK_SET);
       ret = (fprintf(fExportFile, "FileSize=%010d" CRLF, FileSize) > 0) && ret;
       ret = (fprintf(fExportFile, "NrOfLines=%010d" CRLF, z) > 0) && ret;      
       fclose(fExportFile);
+      HDD_SetFileDateTime(&AbsFileName[1], "", Now(NULL));
     }
   }
   else
@@ -555,7 +558,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
 //  Buffer = (char*) malloc(BufSize);
 //  if (Buffer)
   TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
-  fImportFile = fopen(AbsFileName, "r");
+  fImportFile = fopen(AbsFileName, "rb");
   if (fImportFile)
   {
     ret = TRUE;
@@ -713,12 +716,14 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           ret = (sscanf(Buffer, "%*i ; %15[^;\r\n] ; %hu ; %hu ; %n",
                                   CurSat.SatName, &CurSat.SatPosition, &CurSat.NrOfTransponders, &BytesRead) == 3) && ret;
           p += BytesRead;
+          BytesRead = 0;
           RTrim(CurSat.SatName);
 
           // LNBxSupply; LNBxDiSEqC10; LNBxDiSEqC11; LNBxDiSeqC12; LNBxDiSEqC12Flags; LNBxUniversal; LNBxSwitch22; LNBxLowBand; LNBxHBFrq; LNBxLoop
           ret = (sscanf(&Buffer[p], "%c ; %c ;  %hhu ; %hhu ;  %hhu ; %hhu ;  %hhu ; %hhu ;  %9[^;\r\n] ; %9[^;\r\n] ;  %c ; %c ;  %c ; %c ;  %hu ; %hu ;  %hu ; %hu ;  %c ; %c ; %n",
                                       &LNBSupply[0], &LNBSupply[1],  &DiSEqC10[0], &DiSEqC10[1],  &CurSat.LNB[0].DiSEqC11, &CurSat.LNB[1].DiSEqC11,  &CurSat.LNB[0].DiSEqC12, &CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  &UniversalLNB[0], &UniversalLNB[1],  &Switch22[0], &Switch22[1],  &LowBand[0], &LowBand[1],  &CurSat.LNB[0].HBFrq, &CurSat.LNB[1].HBFrq,  &LoopThrough[0], &LoopThrough[1], &BytesRead) == 20) && ret;
           p += BytesRead;
+          BytesRead = 0;
           ret = StrToByteArr(CurSat.LNB[0].DiSEqC12Flags, StringBuf1, sizeof(CurSat.LNB[0].DiSEqC12Flags)) && ret;
           ret = StrToByteArr(CurSat.LNB[1].DiSEqC12Flags, StringBuf2, sizeof(CurSat.LNB[1].DiSEqC12Flags)) && ret;
 
@@ -726,6 +731,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           ret = (sscanf(&Buffer[p], "%hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %15[^;\r\n] ; %15[^;\r\n] ; %n",
                                       &unused1[0], &unused1[1],  &unused2[0], &unused2[1],  &unused3[0], &unused3[1],  &unused4[0], &unused4[1],  StringBuf1, StringBuf2, &BytesRead) == 10) && ret;
           p += BytesRead;
+          BytesRead = 0;
           ret = StrToByteArr(CurSat.LNB[0].unused5, StringBuf1, sizeof(CurSat.LNB[0].unused5)) && ret;
           ret = StrToByteArr(CurSat.LNB[1].unused5, StringBuf2, sizeof(CurSat.LNB[1].unused5)) && ret;
 
@@ -890,7 +896,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           tFavorites             CurFavGroup;
           word                   curSvcNum;
           char                   curSvcType;
-          int                    BytesRead;
+          int                    BytesRead = 0;
           char                  *p;
 
           memset(&CurFavGroup, 0, sizeof(tFavorites));

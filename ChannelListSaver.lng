@@ -49,3 +49,17 @@ en_008=Settings successfully exported.
 en_009=Settings (%s) imported.
 en_010=Error during export!\nPlease check the log file...
 en_011=Error during import!\nPlease check the log file...
+
+#Dutch
+nl_000=SystemType is onbekend.\nAUB de FirmwareTMS.dat kontroleren!
+nl_001=%s-bestand '%s' gevonden.\nMoet deze nu geïmporteerd worden?
+nl_002=Binair
+nl_003=Text
+nl_004=Systeem
+nl_005=Importeren
+nl_006=Vervangen
+nl_007=Annuleren
+nl_008=Instellingen succesvol geëxporteert.
+nl_009=Instellingen (%s) geïmporteert.
+nl_010=Fout bij exporteren!\nAUB het Log-bestand raadplegen...
+nl_011=Fout bij importeren!\nAUB het Log-bestand raadplegen...

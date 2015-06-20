@@ -1,5 +1,7 @@
-#define _FILE_OFFSET_BITS  64
+#define _LARGEFILE_SOURCE
+#define _LARGEFILE64_SOURCE
 #define __USE_LARGEFILE64  1
+#define _FILE_OFFSET_BITS  64
 #ifdef _MSC_VER
   #define __const const
 #endif
@@ -175,6 +177,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
     {
       ret = fwrite(&FileHeader, sizeof(tExportHeader), 1, fExportFile) && ret;
       fclose(fExportFile);
+      HDD_SetFileDateTime(&AbsFileName[1], "", Now(NULL));
     }
   }
   else
