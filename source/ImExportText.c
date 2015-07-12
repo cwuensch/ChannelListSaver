@@ -942,6 +942,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
       }
     }
     fclose(fImportFile);
+    free(Buffer);
 
     WriteLogCSf(PROGRAM_NAME, "  %d of %d lines processed.", CurLine, NrOfLines);
     WriteLogCSf(PROGRAM_NAME, "  %d of %d Satellites, %d of %d Transponders, %d of %d TVServices, %d of %d RadioServices, %d of %d FavGroups imported.",
@@ -950,7 +951,6 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
   else
     WriteLogCS(PROGRAM_NAME, "  File not found!");
 
-  free(Buffer);
 //  if(ret)
 //    FlashProgram();
 

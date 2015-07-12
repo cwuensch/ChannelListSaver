@@ -1,0 +1,14 @@
+v0.6d:  - Export mittels Firmware-Funktion korrigiert!
+        - Export-Dateien erhalten korrektes Datum
+        - Bugfix: Ausgabe von Hex-Werten in richtiger Größe
+        - kleine Bugfixes
+
+v0.6c:  - Fehler beim System Im-/Export korrigiert
+        - Dutch translation added (thanks to Roger Stijfs)
+
+v0.6a:  - keine Fehlermeldung mehr bei fehlender Firmware Im/Export-Funktion (aber std-Erzeugung NICHT möglich!!)
+        - auch ohne Language-Datei lauffähig (nur in englisch)
+
+v0.5:   Im- und Export im Binär- und Text-Format möglich
+
+v0.3:   erste Version online
