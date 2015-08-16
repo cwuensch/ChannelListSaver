@@ -80,11 +80,19 @@ static void  SaveINI(void);
 
 
 // Globale Variablen
-int                     ImportFormat = 0;  // 0 - Binary, 1 - Text, 2 - System
-int                     OverwriteSatellites = 1;  // 0 - nie, 1 - auto, 2 - immer
+SYSTEM_TYPE             CurSystemType;
+int                     NrFavGroups;
+int                     NrFavsPerGroup;
+size_t                  SIZE_SatInfo_TMSx;
+size_t                  SIZE_TpInfo_TMSx;
+size_t                  SIZE_Service_TMSx;
+size_t                  SIZE_Favorites;
 
-bool                    CSShowMessageBox = FALSE;
-dword                   LastMessageBoxKey;
+static bool             CSShowMessageBox = FALSE;
+static dword            LastMessageBoxKey;
+
+static int              ImportFormat = 0;  // 0 - Binary, 1 - Text, 2 - System
+static int              OverwriteSatellites = 1;  // 0 - nie, 1 - auto, 2 - immer
 
 
 // ============================================================================
@@ -804,7 +812,7 @@ bool DeleteAllSettings(bool DeleteSatellites)
       p1 = (char*)(FIS_vFlashBlockServiceName());
       p2 = (char*)(FIS_vFlashBlockProviderInfo());
       if(p1 && p2 && (p2 > p1))
-        memset(p, 0, min(p2 - p1, SERVICENAMESLENGTH));
+        memset(p1, 0, min(p2 - p1, SERVICENAMESLENGTH));
     #endif
   }
 

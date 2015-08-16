@@ -71,20 +71,21 @@ typedef struct
 #endif
 
 
-SYSTEM_TYPE                  CurSystemType;
-int                          NrFavGroups;
-int                          NrFavsPerGroup;
-size_t                       SIZE_SatInfo_TMSx;
-size_t                       SIZE_TpInfo_TMSx;
-size_t                       SIZE_Service_TMSx;
-size_t                       SIZE_Favorites;
+// Globale Variablen
+extern SYSTEM_TYPE      CurSystemType;
+extern int              NrFavGroups;
+extern int              NrFavsPerGroup;
+extern size_t           SIZE_SatInfo_TMSx;
+extern size_t           SIZE_TpInfo_TMSx;
+extern size_t           SIZE_Service_TMSx;
+extern size_t           SIZE_Favorites;
 
 
 int   TAP_Main(void);
 dword TAP_EventHandler(word event, dword param1, dword param2);
 
 void  WriteLogCS(char *ProgramName, char *s);
-void  WriteLogCSf(char *ProgramName, const char *format, ...);
+void  WriteLogCSf(char *ProgramName, const char *format, ...) __attribute__ ((format(__printf__, 2, 3)));
 bool  ConvertUTFStr(char *DestStr, char *SourceStr, int MaxLen, bool ToUnicode);
 bool  HDD_SetFileDateTime(char const *FileName, char const *AbsDirectory, dword NewDateTime);
 
