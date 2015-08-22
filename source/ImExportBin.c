@@ -6,8 +6,8 @@
   #define __const const
 #endif
 
-#define _GNU_SOURCE
 //#define  STACKTRACE     TRUE
+#define _GNU_SOURCE
 #include                <string.h>
 #include                <stdio.h>
 #include                <tap.h>
