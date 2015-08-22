@@ -1,5 +1,6 @@
 v0.6d:  - Export mittels Firmware-Funktion korrigiert!
         - Export-Dateien erhalten korrektes Datum
+        - Standardsprache nun Deutsch
         - Bugfix: Ausgabe von Hex-Werten in richtiger Größe
         - kleine Bugfixes
 

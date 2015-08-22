@@ -52,18 +52,18 @@ typedef enum
 
 char* DefaultStrings[LS_NrStrings] =
 {
-  "Unknown SystemType.\nPlease check FirmwareTMS.dat!",
-  "%s file '%s' found.\nDo you want to import it?",
-  "Binary",
+  "SystemType ist unbekannt.\nBitte die FirmwareTMS.dat überprüfen!",
+  "%s-Datei '%s' gefunden.\nSoll diese nun importiert werden?",
+  "Binär",
   "Text",
   "System",
   "Import",
-  "Overwrite",
-  "Cancel",
-  "Settings successfully exported.",
-  "Settings (%s) imported.",
-  "Error during export!\nPlease check the log file...",
-  "Error during import!\nPlease check the log file..."
+  "Ersetzen",
+  "Abbruch",
+  "Einstellungen erfolgreich exportiert.",
+  "Einstellungen (%s) importiert.",
+  "Fehler beim Export!\nBitte das Logfile prüfen...",
+  "Fehler beim Import!\nBitte das Logfile prüfen..."
  };
 
 #define LangGetString(x)  LangGetStringDefault(x, DefaultStrings[x])
@@ -118,20 +118,21 @@ int TAP_Main(void)
 //  TAP_EnterNormalNoInfo();
 
   // Load Language Strings
-  if(!LangLoadStrings(LNGFILENAME, LS_NrStrings, LAN_English, PROGRAM_NAME))
-  {
-/*    WriteLogCSf(PROGRAM_NAME, "Language file '%s' not found!\r\n", LNGFILENAME);
-    OSDMenuInfoBoxShow(PROGRAM_NAME " " VERSION, "Language file not found!", 500);
-    CSShowMessageBox = TRUE;
-    do
+  if (TAP_GetSystemVar(SYSVAR_OsdLan) != LAN_German)
+    if(!LangLoadStrings(LNGFILENAME, LS_NrStrings, LAN_English, PROGRAM_NAME))
     {
-      TAP_SystemProc();
-      TAP_Sleep(1);
-    } while(OSDMenuInfoBoxIsVisible());
+/*      WriteLogCSf(PROGRAM_NAME, "Language file '%s' not found!\r\n", LNGFILENAME);
+      OSDMenuInfoBoxShow(PROGRAM_NAME " " VERSION, "Language file not found!", 500);
+      CSShowMessageBox = TRUE;
+      do
+      {
+        TAP_SystemProc();
+        TAP_Sleep(1);
+      } while(OSDMenuInfoBoxIsVisible());
 
-    TRACEEXIT();
-    return 0;  */
-  }
+      TRACEEXIT();
+      return 0;  */
+    }
 
   // DEBUG-AUSGABEN
   if ((void*)FIS_fwAppl_ExportChData() == NULL)
