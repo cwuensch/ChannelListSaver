@@ -4,7 +4,7 @@
 #define TAP_SPrint    snprintf
 
 #define PROGRAM_NAME          "ChannelListSaver"
-#define VERSION               "0.6d"
+#define VERSION               "0.7"
 #define TAPID                 0x2A0A0002
 #define AUTHOR                "chris86"
 //#define DESCRIPTION           "Im-/Export of Sat-, Transponder- & Channel-Lists"

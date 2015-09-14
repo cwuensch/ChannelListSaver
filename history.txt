@@ -1,10 +1,15 @@
+v0.7:	- [neu] ini-Option "RestoreNameLock=1" für Wiederherstellen des NameLock-Flags
+        - [Bug] Löschen der TV- und Radio-Senderlisten wurde nicht ausgeführt
+        - [Bug] beim System-Import wurde die Sicherungsdatei nicht eingespielt, sondern gelöscht(!)
+        - [int] CSShowMessageBox und LastMessageBoxKey entfernt (unnötig)
+
 v0.6d:  - Export mittels Firmware-Funktion korrigiert!
         - Export-Dateien erhalten korrektes Datum
         - Standardsprache nun Deutsch
         - Bugfix: Ausgabe von Hex-Werten in richtiger Größe
         - kleine Bugfixes
 
-v0.6c:  - Fehler beim System Im-/Export korrigiert
+v0.6c:  - Fehler beim System Export korrigiert (-> BUG beim Import!)
         - Dutch translation added (thanks to Roger Stijfs)
 
 v0.6a:  - keine Fehlermeldung mehr bei fehlender Firmware Im/Export-Funktion (aber std-Erzeugung NICHT möglich!!)

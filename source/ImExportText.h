@@ -16,6 +16,6 @@ typedef enum
 
 
 bool          ExportSettings_Text(char *FileName, char *AbsDirectory);
-bool          ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatellites);  // 0: nie, 1: auto, 2: immer
+bool          ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatellites, bool RestoreNameLock);  // 0: nie, 1: auto, 2: immer
 
 #endif

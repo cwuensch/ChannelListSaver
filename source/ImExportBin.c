@@ -195,7 +195,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
 }
 
 
-bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)  // 0: nie, 1: auto, 2: immer
+bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites, bool RestoreNameLock)  // 0: nie, 1: auto, 2: immer
 {
   tExportHeader         FileHeader;
   FILE                 *fImportFile = NULL;
@@ -403,7 +403,8 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites)
                   }
                   else
                     ret = FALSE;
-                  newServices[i].NameLock = 0;
+                  if (!RestoreNameLock)
+                    newServices[i].NameLock = 0;
                   memcpy(&p[*nSvc], &newServices[i], SIZE_Service_TMSx);
                   *nSvc = *nSvc + 1;
                 }

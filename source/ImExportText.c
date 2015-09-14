@@ -534,7 +534,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
   return ret;
 }
 
-bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatellites)  // 0: nie, 1: auto, 2: immer
+bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatellites, bool RestoreNameLock)  // 0: nie, 1: auto, 2: immer
 {
   tExportHeader         FileHeader;
   size_t                BufSize = 0;
@@ -876,7 +876,8 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           CurService.FlagCAS = CharToBool(CharFlagCAS);
           CurService.FlagLock = CharToBool(CharFlagLock);
           CurService.FlagSkip = CharToBool(CharFlagSkip);
-          CurService.NameLock = CharToBool(CharNameLock);
+          if (RestoreNameLock)
+            CurService.NameLock = CharToBool(CharNameLock);
           ret = StrToByteArr(CurService.unknown2, StringBuf3, sizeof(CurService.unknown2)) && ret;
 
           if (FileHeader.UTF8System != isUTFToppy())

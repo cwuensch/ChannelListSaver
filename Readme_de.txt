@@ -59,5 +59,7 @@ Known Bugs:
   - Nach einem Zurücksetzen der Service-Liste (über das Topf-Menü) und anschließendem Import durch dieses TAP werden die Favoriten-Listen manchmal vom Topf wieder überschrieben. Ein nochmaliger Import behebt das Problem.
 
 INI-Datei:
-  ImportFormat:         [0] Binärdatei bevorzugt importieren, [1] Textdatei bevorzugen,          [2] System-Backup (Settings.std) bevorzugen
-  OverwriteSatellites:  [0] Sat-Liste niemals überschreiben,  [1] überschreibe wenn abweichend,  [2] immer überschreiben
+  ImportFormat:		Zum Import bevorzugtes Datenformat: [0] Binärdatei, [1] Textdatei, [2] System-Backup (Settings.std)
+  OverwriteSatellites:	Überschreiben der Sat-Liste: [0] niemals, [1] wenn abweichend, [2] immer
+[seit v0.7]
+  RestoreNameLock:	Beim Import das Flag "Sperre gegen Namensänderung" wiederherstellen. [0,1]

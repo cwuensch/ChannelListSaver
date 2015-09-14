@@ -61,5 +61,7 @@ Known Bugs:
   - After a reset the service list (on the pot menu) and then import this by TAP favorites lists are sometimes overwritten from the pot. Column again import fixes the problem.
 
 INI file:
-  Import format: [0] binary import preferred [1] prefer text file, prefer [2] system backup (Settings.std)
-  Overwrite Satellites: Never override [0] satellite list, [1] overwrite if different, [2] Always overwrite
+  Import format:	[0] binary import preferred [1] prefer text file, prefer [2] system backup (Settings.std)
+  Overwrite Satellites:	[0] never override satellite list, [1] overwrite if different, [2] always overwrite
+[since v0.7]
+  RestoreNameLock:	Set the "Flag against renaming" on restore. [0,1]

@@ -89,11 +89,10 @@ size_t                  SIZE_TpInfo_TMSx;
 size_t                  SIZE_Service_TMSx;
 size_t                  SIZE_Favorites;
 
-static bool             CSShowMessageBox = FALSE;
-static dword            LastMessageBoxKey;
-
+//static bool             CSShowMessageBox = FALSE;
 static int              ImportFormat = 0;  // 0 - Binary, 1 - Text, 2 - System
 static int              OverwriteSatellites = 1;  // 0 - nie, 1 - auto, 2 - immer
+static bool             RestoreNameLock = FALSE;
 
 
 // ============================================================================
@@ -182,7 +181,7 @@ int TAP_Main(void)
         #ifdef FULLDEBUG
           HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
         #endif
-        ret = ImportSettings_Text(EXPORTFILENAME ".txt", TAPFSROOT LOGDIR, OverwriteSatellites);
+        ret = ImportSettings_Text(EXPORTFILENAME ".txt", TAPFSROOT LOGDIR, OverwriteSatellites, RestoreNameLock);
         #ifdef FULLDEBUG
           ExportSettings("Debug_AfterTxtImport.dat", TAPFSROOT LOGDIR);
         #endif
@@ -206,7 +205,7 @@ int TAP_Main(void)
         #ifdef FULLDEBUG
           HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
         #endif
-        ret = ImportSettings(EXPORTFILENAME ".dat", TAPFSROOT LOGDIR, OverwriteSatellites);
+        ret = ImportSettings(EXPORTFILENAME ".dat", TAPFSROOT LOGDIR, OverwriteSatellites, RestoreNameLock);
         #ifdef FULLDEBUG
           ExportSettings("Debug_AfterBinImport.dat", TAPFSROOT LOGDIR);
         #endif
@@ -245,23 +244,23 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
 //  TRACEENTER();
 
   // Behandlung offener MessageBoxen (rekursiver Aufruf, auch bei DoNotReenter)
-  if(CSShowMessageBox)
-  {
+//  if(CSShowMessageBox)
+//  {
     if(OSDMenuMessageBoxIsVisible() || OSDMenuInfoBoxIsVisible())
     {
       if(OSDMenuMessageBoxIsVisible())
       {
-        if(event == EVT_KEY) LastMessageBoxKey = param1;
+//        if(event == EVT_KEY) LastMessageBoxKey = param1;
         #ifdef __ALTEFBLIB__
           OSDMenuMessageBoxDoScrollOver(&event, &param1);
         #endif
       }
       OSDMenuEvent(&event, &param1, &param2);
+      param1 = 0;
     }
-    if(!OSDMenuMessageBoxIsVisible() && !OSDMenuInfoBoxIsVisible())
-     CSShowMessageBox = FALSE;
-    param1 = 0;
-  }
+//    if(!OSDMenuMessageBoxIsVisible() && !OSDMenuInfoBoxIsVisible())
+//     CSShowMessageBox = FALSE;
+//  }
 
 //  TRACEEXIT();
   return param1;
@@ -395,7 +394,8 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
 //  RelFileName = &AbsFileName[21];
 
   // Create/empty the file, if not exists
-  fclose(fopen(AbsFileName, "w"));
+  if(!Import)
+    fclose(fopen(AbsFileName, "w"));
   
   //Get the current TAP folder variable
   if(!_hddTapFolder)
@@ -435,7 +435,8 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
   }
   else
   {
-    remove(AbsFileName);
+    if(!Import)
+      remove(AbsFileName);
     WriteLogCSf(PROGRAM_NAME, (Import ? "--> Error during import '%s'!" : "--> Error during export '%s'!"), FileName);
   }
   HDD_TAP_PopDir();
@@ -523,7 +524,7 @@ void DebugServiceNames(char* FileName)
 int ShowConfirmationDialog(char *MessageStr)
 {
   dword OldSysState, OldSysSubState;
-  bool ret;
+  int ret;
 
   TRACEENTER();
   HDD_TAP_PushDir();
@@ -538,15 +539,15 @@ int ShowConfirmationDialog(char *MessageStr)
   OSDMenuMessageBoxButtonAdd(LangGetString(LS_AnswerCancel));
   OSDMenuMessageBoxButtonSelect(2);
   OSDMenuMessageBoxShow();
-  CSShowMessageBox = TRUE;
-  while (CSShowMessageBox)
+//  CSShowMessageBox = TRUE;
+  while (OSDMenuMessageBoxIsVisible())
   {
     TAP_SystemProc();
     TAP_Sleep(1);
   }
   ret = 0;
-  if ((LastMessageBoxKey == RKEY_Ok) && (OSDMenuMessageBoxLastButton() != 2))
-    ret = OSDMenuMessageBoxLastButton() + 1;
+  if ((OSDMenuMessageBoxLastButton() != (dword) -1) && (OSDMenuMessageBoxLastButton() != 2))
+    ret = ((int)OSDMenuMessageBoxLastButton()) + 1;
 
   TAP_Osd_Sync();
   if(OldSysSubState != 0) TAP_EnterNormalNoInfo();
@@ -570,8 +571,8 @@ void ShowErrorMessage(char *MessageStr, char *TitleStr)
   OSDMenuMessageBoxDoNotEnterNormalMode(TRUE);
   OSDMenuMessageBoxButtonAdd("OK");
   OSDMenuMessageBoxShow();
-  CSShowMessageBox = TRUE;
-  while (CSShowMessageBox)
+//  CSShowMessageBox = TRUE;
+  while (OSDMenuMessageBoxIsVisible())
   {
     TAP_SystemProc();
     TAP_Sleep(1);
@@ -601,6 +602,7 @@ void LoadINI(void)
   {
     ImportFormat        = INIGetInt("ImportFormat",        1, 0, 2);   // 0 - Binary, 1 - Text, 2 - System
     OverwriteSatellites = INIGetInt("OverwriteSatellites", 1, 0, 2);
+    RestoreNameLock     = INIGetInt("RestoreNameLock",     0, 0, 1) == 1;
   }
   INICloseFile();
 
@@ -620,6 +622,7 @@ void SaveINI(void)
   INIOpenFile(INIFILENAME, PROGRAM_NAME);
   INISetInt ("ImportFormat",        ImportFormat);
   INISetInt ("OverwriteSatellites", OverwriteSatellites);
+  INISetInt ("RestoreNameLock",     RestoreNameLock ? 1 : 0);
   INISaveFile(INIFILENAME, INILOCATION_AtCurrentDir, NULL);
   INICloseFile();
   HDD_TAP_PopDir();
@@ -839,7 +842,7 @@ bool DeleteAllSettings(bool DeleteSatellites)
     {
       nServices = *nSvc;
       *nSvc = 0;
-      memset(p, 0, *nSvc * SIZE_Service_TMSx);
+      memset(p, 0, nServices * SIZE_Service_TMSx);
     }
 
     // Radio Services
@@ -849,7 +852,7 @@ bool DeleteAllSettings(bool DeleteSatellites)
     {
       nServices = *nSvc;
       *nSvc = 0;
-      memset(p, 0, *nSvc * SIZE_Service_TMSx);
+      memset(p, 0, nServices * SIZE_Service_TMSx);
     }
     else ret = FALSE;
   }
