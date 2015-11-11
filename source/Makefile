@@ -27,7 +27,7 @@ all: $(APP1).tap clean
 
 $(APP1).tap: $(APP1).o ImExportBin.o ImExportText.o FlashSatTablesSetInfo.o
 	@echo "[Linking... $@]"
-	@$(LD) -shared --no-undefined --allow-shlib-undefined -O1 -s --gc-sections ImExportBin.o ImExportText.o FlashSatTablesSetInfo.o -o $@ $< $(TAP_LIBS)
+	@$(LD) -shared --no-undefined --allow-shlib-undefined -O1 --gc-sections ImExportBin.o ImExportText.o FlashSatTablesSetInfo.o -o $@ $< $(TAP_LIBS)
 	@$(JB) $@
 
 %.o: %.c ${BASE}/include/libFireBird.h
