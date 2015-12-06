@@ -1,7 +1,11 @@
-v0.7:	- [neu] ini-Option "RestoreNameLock=1" für Wiederherstellen des NameLock-Flags
-        - [Bug] Löschen der TV- und Radio-Senderlisten wurde nicht ausgeführt
-        - [Bug] beim System-Import wurde die Sicherungsdatei nicht eingespielt, sondern gelöscht(!)
-        - [int] CSShowMessageBox und LastMessageBoxKey entfernt (unnötig)
+v0.7          NEU:
+(2015-10-31)    * ini-Option "RestoreNameLock=1" für Wiederherstellen des NameLock-Flags
+              BUGFIXES:
+                * Löschen der TV- und Radio-Senderlisten wurde nicht ausgeführt
+                * beim System-Import wurde die Sicherungsdatei nicht eingespielt, sondern gelöscht(!)
+                * Leerzeichen (0x20) wurde in ConvertUTF8Str als Codepage-Identifikator gewertet
+              INTERNALS:
+                * CSShowMessageBox und LastMessageBoxKey entfernt (unnötig)
 
 v0.6d:  - Export mittels Firmware-Funktion korrigiert!
         - Export-Dateien erhalten korrektes Datum

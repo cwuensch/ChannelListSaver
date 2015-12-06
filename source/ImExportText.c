@@ -656,18 +656,24 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
             FileHeader.FileVersion = Value;
             if (Value == 1)
               HeaderCheck[0] = TRUE;
+            else
+              WriteLogCSf(PROGRAM_NAME, "  Incorrect file version %lu.", Value);
           }
           else if (strcmp(Name, "FileSize") == 0)
           {
             FileHeader.FileSize = Value;
             if (Value == fs)
               HeaderCheck[1] = TRUE;
+            else
+              WriteLogCSf(PROGRAM_NAME, "  Incorrect file size %lu (should be %lu).", FileHeader.FileSize, fs);
           }
           else if (strcmp(Name, "SystemType") == 0)
           {
             FileHeader.SystemType = (SYSTEM_TYPE) Value;
             if (Value == CurSystemType)
               HeaderCheck[2] = TRUE;
+            else
+              WriteLogCSf(PROGRAM_NAME, "  Incorrect system type %u (should be %u).", FileHeader.SystemType, CurSystemType);
           }
           else if (strcmp(Name, "NrOfLines") == 0)
             NrOfLines = Value;
