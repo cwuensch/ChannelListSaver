@@ -72,10 +72,11 @@ char* DefaultStrings[LS_NrStrings] =
 
 //static void  OSDMenuMessageBoxDoScrollOver(word *event, dword *param1);
 
-static int   ShowConfirmationDialog(char *MessageStr);
-static void  ShowErrorMessage(char *MessageStr, char *TitleStr);
+static void  CreateRootDir(void);
 static char  SysTypeToStr(void);
 static bool  InitSystemType(void);
+static int   ShowConfirmationDialog(char *MessageStr);
+static void  ShowErrorMessage(char *MessageStr, char *TitleStr);
 static void  LoadINI(void);
 static void  SaveINI(void);
 
@@ -110,10 +111,11 @@ int TAP_Main(void)
   #endif
   TRACEENTER();
 
-  WriteLogCS (PROGRAM_NAME, "***  ChannelListSaver " VERSION " started! (FBLib " __FBLIB_VERSION__ ") ***");
-  WriteLogCS (PROGRAM_NAME, "=======================================================");
-  WriteLogCSf(PROGRAM_NAME, "Receiver Model: %s (%u), System Type: TMS-%c (%d)", GetToppyString(GetSysID()), GetSysID(), SysTypeToStr(), GetSystemType());
-  WriteLogCSf(PROGRAM_NAME, "Firmware: %s", GetApplVer());
+  CreateRootDir();
+  WriteLogMC (PROGRAM_NAME, "***  ChannelListSaver " VERSION " started! (FBLib " __FBLIB_VERSION__ ") ***");
+  WriteLogMC (PROGRAM_NAME, "=======================================================");
+  WriteLogMCf(PROGRAM_NAME, "Receiver Model: %s (%u), System Type: TMS-%c (%d)", GetToppyString(GetSysID()), GetSysID(), SysTypeToStr(), GetSystemType());
+  WriteLogMCf(PROGRAM_NAME, "Firmware: %s", GetApplVer());
 
 //  TAP_EnterNormalNoInfo();
 
@@ -121,7 +123,7 @@ int TAP_Main(void)
   if (TAP_GetSystemVar(SYSVAR_OsdLan) != LAN_German)
     if(!LangLoadStrings(LNGFILENAME, LS_NrStrings, LAN_English, PROGRAM_NAME))
     {
-/*      WriteLogCSf(PROGRAM_NAME, "Language file '%s' not found!\r\n", LNGFILENAME);
+/*      WriteLogMCf(PROGRAM_NAME, "Language file '%s' not found!\r\n", LNGFILENAME);
       OSDMenuInfoBoxShow(PROGRAM_NAME " " VERSION, "Language file not found!", 500);
       CSShowMessageBox = TRUE;
       do
@@ -130,30 +132,31 @@ int TAP_Main(void)
         TAP_Sleep(1);
       } while(OSDMenuInfoBoxIsVisible());
 
+      CloseLogMC();
       TRACEEXIT();
       return 0;  */
     }
 
   // DEBUG-AUSGABEN
   if ((void*)FIS_fwAppl_ExportChData() == NULL)
-    WriteLogCS("Warning", "Firmware function FIS_fwAppl_ExportChData() not found!");
+    WriteLogMC("Warning", "Firmware function FIS_fwAppl_ExportChData() not found!");
   if ((void*)FIS_fwAppl_ImportChData() == NULL)
-    WriteLogCS("Warning", "Firmware function FIS_fwAppl_ImportChData() not found!");
+    WriteLogMC("Warning", "Firmware function FIS_fwAppl_ImportChData() not found!");
   if ((void*)FIS_fwTimeToLinux() == NULL)
-    WriteLogCS("DEBUG", "Firmware function FIS_fwTimeToLinux() not found!");
+    WriteLogMC("DEBUG", "Firmware function FIS_fwTimeToLinux() not found!");
 
 /*  dword (*_PvrTimeToLinux)(dword) = NULL;
   _PvrTimeToLinux = (void*)FIS_fwTimeToLinux();
   if(_PvrTimeToLinux)
-    WriteLogCS("DEBUG", "_PvrTimeToLinux gefunden!");
+    WriteLogMC("DEBUG", "_PvrTimeToLinux gefunden!");
 
   byte Sec;
   dword CurTime = Now(&Sec);
-  WriteLogCSf("DEBUG", "Current time: Topfield=%u", CurTime);
+  WriteLogMCf("DEBUG", "Current time: Topfield=%u", CurTime);
   dword CurLinuxTime = PvrTimeToLinux(CurTime) + Sec;
-  WriteLogCSf("DEBUG", "Current time: PVRtoLinux=%u, %s", CurLinuxTime, ctime((time_t*) &CurLinuxTime));
+  WriteLogMCf("DEBUG", "Current time: PVRtoLinux=%u, %s", CurLinuxTime, ctime((time_t*) &CurLinuxTime));
   dword CurUnixTime = TF2UnixTime(CurTime) + Sec;
-  WriteLogCSf("DEBUG", "Current time: TF2UnixTime=%u, %s", CurUnixTime, ctime((time_t*) &CurUnixTime)); */
+  WriteLogMCf("DEBUG", "Current time: TF2UnixTime=%u, %s", CurUnixTime, ctime((time_t*) &CurUnixTime)); */
 
 
   // Main-Funktion
@@ -161,7 +164,7 @@ int TAP_Main(void)
   {
     TAP_Hdd_ChangeDir(LOGDIR);
     LoadINI();
-    WriteLogCSf(PROGRAM_NAME, "Parameters: ImportFormat=%d, OverwriteSatellites=%d", ImportFormat, OverwriteSatellites);
+    WriteLogMCf(PROGRAM_NAME, "Parameters: ImportFormat=%d, OverwriteSatellites=%d", ImportFormat, OverwriteSatellites);
 
     if (TAP_Hdd_Exist("Settings.std") && (ImportFormat == 2 || (!TAP_Hdd_Exist(EXPORTFILENAME ".dat") && !TAP_Hdd_Exist(EXPORTFILENAME ".txt"))))
     {
@@ -177,7 +180,7 @@ int TAP_Main(void)
       Answer = ShowConfirmationDialog(TempStr);
       if (Answer == 1)
       {
-//        WriteLogCS(PROGRAM_NAME, "[Aktion] Importiere '" EXPORTFILENAME ".txt' (Text)...");
+//        WriteLogMC(PROGRAM_NAME, "[Aktion] Importiere '" EXPORTFILENAME ".txt' (Text)...");
         #ifdef FULLDEBUG
           HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
         #endif
@@ -201,7 +204,7 @@ int TAP_Main(void)
       Answer = ShowConfirmationDialog(TempStr);
       if (Answer == 1)
       {
-//        WriteLogCS(PROGRAM_NAME, "[Aktion] Importiere '" EXPORTFILENAME ".dat' (binär)...");
+//        WriteLogMC(PROGRAM_NAME, "[Aktion] Importiere '" EXPORTFILENAME ".dat' (binär)...");
         #ifdef FULLDEBUG
           HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
         #endif
@@ -221,7 +224,7 @@ int TAP_Main(void)
 
     if (Answer == 2)
     {
-//      WriteLogCS(PROGRAM_NAME, "[Aktion] Exportiere Settings...");
+//      WriteLogMC(PROGRAM_NAME, "[Aktion] Exportiere Settings...");
       ret = ExportSettings(EXPORTFILENAME ".dat",      TAPFSROOT LOGDIR);
       ret = ExportSettings_Text(EXPORTFILENAME ".txt", TAPFSROOT LOGDIR) && ret;
       ret =(HDD_ImExportChData("Settings.std",         TAPFSROOT LOGDIR, FALSE) || ((void*)FIS_fwAppl_ExportChData() == NULL)) && ret;
@@ -233,7 +236,8 @@ int TAP_Main(void)
     ShowErrorMessage(LangGetString(LS_UnknownSystemType), NULL);
 
   LangUnloadStrings();
-  WriteLogCS(PROGRAM_NAME, "ChannelListSaver Exit.\r\n");
+  WriteLogMC(PROGRAM_NAME, "ChannelListSaver Exit.\r\n");
+  CloseLogMC();
   TRACEEXIT();
   return 0;
 }
@@ -270,26 +274,59 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
 // ----------------------------------------------------------------------------
 //                              Hilfsfunktionen
 // ----------------------------------------------------------------------------
-void WriteLogCS(char *ProgramName, char *s)
+FILE *fLogMC = NULL;
+
+void CreateRootDir(void)
 {
-  static bool FirstCall = TRUE;
+  //Check & Create Folders
+  HDD_TAP_PushDir();
+  HDD_ChangeDir("/ProgramFiles");
+  if(!TAP_Hdd_Exist("Settings")) TAP_Hdd_Create("Settings", ATTR_FOLDER);
+  HDD_ChangeDir("Settings");
+  if(!TAP_Hdd_Exist(PROGRAM_NAME)) TAP_Hdd_Create(PROGRAM_NAME, ATTR_FOLDER);
+  HDD_TAP_PopDir();
+}
 
-//  HDD_TAP_PushDir();
-
-  if(FirstCall)
+void CloseLogMC(void)
+{
+  if (fLogMC)
   {
-    HDD_ChangeDir("/ProgramFiles");
-    if(!TAP_Hdd_Exist("Settings")) TAP_Hdd_Create("Settings", ATTR_FOLDER);
-    HDD_ChangeDir("Settings");
-    if(!TAP_Hdd_Exist(PROGRAM_NAME)) TAP_Hdd_Create(PROGRAM_NAME, ATTR_FOLDER);
-    FirstCall = FALSE;
+    fclose(fLogMC);
+
+    //As the log would receive the Linux time stamp (01.01.2000), adjust to the PVR's time
+    struct utimbuf      times;
+    times.actime = PvrTimeToLinux(Now(NULL));
+    times.modtime = times.actime;
+    utime(TAPFSROOT LOGDIR "/" LOGFILENAME, &times);
+  }
+  fLogMC = NULL;
+}
+
+void WriteLogMC(char *ProgramName, char *Text)
+{
+  char                 *TS = NULL;
+  byte                  Sec;
+
+  TS = TimeFormat(Now(&Sec), Sec, TIMESTAMP_YMDHMS);
+
+  if (!fLogMC)
+  {
+    fLogMC = fopen(TAPFSROOT LOGDIR "/" LOGFILENAME, "ab");
+    setvbuf(fLogMC, NULL, _IOLBF, 4096);  // zeilenweises Buffering
+  }
+  if (fLogMC)
+  {
+    fprintf(fLogMC, "%s %s\r\n", TS, Text);
+//    close(fLogMC);
   }
 
-  TAP_Hdd_ChangeDir(LOGDIR);
-  LogEntry(PROGRAM_NAME ".log", ProgramName, TRUE, TIMESTAMP_YMDHMS, s);
-//  HDD_TAP_PopDir();
+//  if (Console)
+  {
+    TAP_PrintNet("%s %s: %s\n", TS, ((ProgramName && ProgramName[0]) ? ProgramName : ""), Text);
+  }
 }
-void WriteLogCSf(char *ProgramName, const char *format, ...)
+
+void WriteLogMCf(char *ProgramName, const char *format, ...)
 {
   char Text[512];
 
@@ -299,7 +336,7 @@ void WriteLogCSf(char *ProgramName, const char *format, ...)
     va_start(args, format);
     vsnprintf(Text, sizeof(Text), format, args);
     va_end(args);
-    WriteLogCS(ProgramName, Text);
+    WriteLogMC(ProgramName, Text);
   }
 }
 
@@ -387,8 +424,8 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
 
   TRACEENTER();
   HDD_TAP_PushDir();
-  WriteLogCSf(PROGRAM_NAME, (Import ? "[Action] Importing '%s' (System)..." : "[Action] Exporting '%s' (System)..."), FileName);
-  WriteLogCS(PROGRAM_NAME, "----------------------------------------");
+  WriteLogMCf(PROGRAM_NAME, (Import ? "[Action] Importing '%s' (System)..." : "[Action] Exporting '%s' (System)..."), FileName);
+  WriteLogMC(PROGRAM_NAME, "----------------------------------------");
 
   TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
 //  RelFileName = &AbsFileName[21];
@@ -431,13 +468,13 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
   if (ret)
   {
     HDD_SetFileDateTime(FileName, AbsDirectory, Now(NULL));
-    WriteLogCSf(PROGRAM_NAME, (Import ? "--> Import '%s' successful." : "--> Export '%s' successful."), FileName);
+    WriteLogMCf(PROGRAM_NAME, (Import ? "--> Import '%s' successful." : "--> Export '%s' successful."), FileName);
   }
   else
   {
     if(!Import)
       remove(AbsFileName);
-    WriteLogCSf(PROGRAM_NAME, (Import ? "--> Error during import '%s'!" : "--> Error during export '%s'!"), FileName);
+    WriteLogMCf(PROGRAM_NAME, (Import ? "--> Error during import '%s'!" : "--> Error during export '%s'!"), FileName);
   }
   HDD_TAP_PopDir();
 
@@ -661,7 +698,7 @@ bool InitSystemType(void)
       break;
 
     default:
-      WriteLogCSf(PROGRAM_NAME, "Unsupported system type: %d!", CurSystemType);
+      WriteLogMCf(PROGRAM_NAME, "Unsupported system type: %d!", CurSystemType);
       ret = FALSE;
       break;
   }
@@ -678,7 +715,7 @@ bool InitSystemType(void)
       break;
 
     default:
-      WriteLogCS(PROGRAM_NAME, "Unsupported favorites structure!");
+      WriteLogMC(PROGRAM_NAME, "Unsupported favorites structure!");
       ret = FALSE;
       break;
   }
@@ -754,7 +791,7 @@ bool DeleteTimers(void)
     ret = TAP_Timer_Delete(0) && ret;
     Count++;
   }
-  WriteLogCSf(PROGRAM_NAME, "  %d timers have been deleted.", Count);
+  WriteLogMCf(PROGRAM_NAME, "  %d timers have been deleted.", Count);
   TRACEEXIT();
   return ret;
 }
@@ -770,7 +807,7 @@ void DeleteServiceNames(void)
   int                   nTVServices, nRadioServices, i;
   TAP_Channel_GetTotalNum(&nTVServices, &nRadioServices);
 
-  WriteLogCS(PROGRAM_NAME, "  DeleteServiceNames()");
+  WriteLogMC(PROGRAM_NAME, "  DeleteServiceNames()");
 //  char tmp[512];
 //  DebugServiceNames("vorher.dat");
   for (i = (nRadioServices - 1); i >= 0; i--)
@@ -796,7 +833,7 @@ bool DeleteAllSettings(bool DeleteSatellites)
   TRACEENTER();
   bool ret = TRUE;
 
-  WriteLogCSf(PROGRAM_NAME, "Deleting all settings (DeleteSat=%s):", (DeleteSatellites ? "true" : "false"));
+  WriteLogMCf(PROGRAM_NAME, "Deleting all settings (DeleteSat=%s):", (DeleteSatellites ? "true" : "false"));
   DeleteTimers();
   {
     // Favorites
@@ -897,7 +934,7 @@ bool DeleteAllSettings(bool DeleteSatellites)
     else ret = FALSE;
   }
 
-  if(!ret) WriteLogCS(PROGRAM_NAME, "  Error while deleting old settings!");
+  if(!ret) WriteLogMC(PROGRAM_NAME, "  Error while deleting old settings!");
   TRACEEXIT();
   return ret;
 }

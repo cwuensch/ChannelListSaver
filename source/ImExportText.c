@@ -145,11 +145,11 @@ byte StrToFEC(char *inStr)
   if (ret <= 0xF)
   {
     if (ret == 0)
-      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect FEC-String: '%s' (line %d)", inStr, CurLine);
+      WriteLogMCf(PROGRAM_NAME, "  Warning: Suspect FEC-String: '%s' (line %d)", inStr, CurLine);
     return ret;
   }
   else
-    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid FEC-String: '%s' (line %d)", inStr, CurLine);
+    WriteLogMCf(PROGRAM_NAME, "  Error: Invalid FEC-String: '%s' (line %d)", inStr, CurLine);
   return FEC_NO_CONV;
 }
 
@@ -203,11 +203,11 @@ byte StrToModulation(char *inStr)
   if (ret <= ((CurSystemType == ST_TMSS) ? 3 : 0xFF))
   {
     if (ret == 0)
-      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect Modulation-String: '%s' (line %d)", inStr, CurLine);
+      WriteLogMCf(PROGRAM_NAME, "  Warning: Suspect Modulation-String: '%s' (line %d)", inStr, CurLine);
     return ret;
   }
   else
-    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid Modulation-String: '%s' (line %d)", inStr, CurLine);
+    WriteLogMCf(PROGRAM_NAME, "  Error: Invalid Modulation-String: '%s' (line %d)", inStr, CurLine);
   return 0;
 }
 
@@ -245,11 +245,11 @@ byte StrToVideoType(char *inStr)
   if (ret <= 0xFF)
   {
     if (ret == 0)
-      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect VideoType-String: '%s' (line %d)", inStr, CurLine);
+      WriteLogMCf(PROGRAM_NAME, "  Warning: Suspect VideoType-String: '%s' (line %d)", inStr, CurLine);
     return ret;
   }
   else
-    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid VideoType-String: '%s' (line %d)", inStr, CurLine);
+    WriteLogMCf(PROGRAM_NAME, "  Error: Invalid VideoType-String: '%s' (line %d)", inStr, CurLine);
   return STREAM_UNKNOWN;
 }
 
@@ -289,11 +289,11 @@ word StrToAudioType(char *inStr)
   if (ret < 0xFFFF)
   {
     if (ret == 0)
-      WriteLogCSf(PROGRAM_NAME, "  Warning: Suspect AudioType-String: '%s' (line %d)", inStr, CurLine);
+      WriteLogMCf(PROGRAM_NAME, "  Warning: Suspect AudioType-String: '%s' (line %d)", inStr, CurLine);
     return ret;
   }
   else
-    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid AudioType-String: '%s' (line %d)", inStr, CurLine);
+    WriteLogMCf(PROGRAM_NAME, "  Error: Invalid AudioType-String: '%s' (line %d)", inStr, CurLine);
   return STREAM_UNKNOWN;
 }
 
@@ -307,8 +307,8 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
   bool                  ret = FALSE;
 
   TRACEENTER();
-  WriteLogCS(PROGRAM_NAME, "[Action] Exporting settings (Text)...");
-  WriteLogCS(PROGRAM_NAME, "----------------------------------------");
+  WriteLogMC(PROGRAM_NAME, "[Action] Exporting settings (Text)...");
+  WriteLogMC(PROGRAM_NAME, "----------------------------------------");
 
   TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
   fExportFile = fopen(AbsFileName, "wb");
@@ -389,12 +389,12 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
           z++;
         }
         else
-          WriteLogCSf(PROGRAM_NAME, "  Failed to decode sat %d!", i);
+          WriteLogMCf(PROGRAM_NAME, "  Failed to decode sat %d!", i);
       }
       fprintf(fExportFile, CRLF);
       z++;
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Satellites exported." : "%5d Satellites error!", i);
+    WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d Satellites exported." : "%5d Satellites error!", i);
 
     //[Transponders]
     //# Nr; SatIdx;  Frequency; SymbRate; Channel;  BW;  TSID; ONWID;  NWID; Pilot;      FEC; Modulation; System; Pol; LPHP; ClockSync; Unknown1; Unknown2; Unknown3; Unknown4
@@ -426,14 +426,14 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
             z++;
           }
           else
-            WriteLogCSf(PROGRAM_NAME, "  Failed to decode transponder %d!", j);
+            WriteLogMCf(PROGRAM_NAME, "  Failed to decode transponder %d!", j);
         }
         if (ret) FileHeader.NrTransponders += NrTransponders;
         fprintf(fExportFile, CRLF);
         z++;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Transponders exported." : "%5d Transponders error!", FileHeader.NrTransponders);
+    WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d Transponders exported." : "%5d Transponders error!", FileHeader.NrTransponders);
 
     //[Services]
     //# Nr; ServiceName            ; SatIdx; TrpIdx; Tuner; VideoType; AudioType;  SvcID; PMTPID; PCRPID; VidPID; AudPID;   LCN; FDel; FCAS; FLock; FSkip; NameLck; Flags2; Unknown2;           ProviderName
@@ -468,11 +468,11 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
           z++;
         }
         else
-          WriteLogCSf(PROGRAM_NAME, "  Failed to decode %s service %d!", CurSvcType, i);
+          WriteLogMCf(PROGRAM_NAME, "  Failed to decode %s service %d!", CurSvcType, i);
       }
       fprintf(fExportFile, CRLF);
       z++;
-      WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d %sServices exported." : "%5d %sServices error!", i, CurSvcType);
+      WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d %sServices exported." : "%5d %sServices error!", i, CurSvcType);
     }
 
     //[Favorites]
@@ -501,10 +501,10 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
           if (ret) FileHeader.NrFavGroups++;
         }
 //        else
-//          WriteLogCSf(PROGRAM_NAME, "  Failed to decode favorite group %d!", i);
+//          WriteLogMCf(PROGRAM_NAME, "  Failed to decode favorite group %d!", i);
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Favorite-Groups exported." : "%5d Favorites error!", FileHeader.NrFavGroups);
+    WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d Favorite-Groups exported." : "%5d Favorites error!", FileHeader.NrFavGroups);
 
 
     FileSize = ftell(fExportFile);
@@ -521,14 +521,14 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
     }
   }
   else
-    WriteLogCS(PROGRAM_NAME, "  File not found!");
+    WriteLogMC(PROGRAM_NAME, "  File not found!");
 
   if (ret)
-    WriteLogCSf(PROGRAM_NAME, "--> Export '%s' (Text) successful.", FileName);
+    WriteLogMCf(PROGRAM_NAME, "--> Export '%s' (Text) successful.", FileName);
   else
   {
     if(TAP_Hdd_Exist(FileName)) TAP_Hdd_Delete(FileName);
-    WriteLogCSf(PROGRAM_NAME, "--> Error during export '%s'.", FileName);
+    WriteLogMCf(PROGRAM_NAME, "--> Error during export '%s'.", FileName);
   }
   TRACEEXIT();
   return ret;
@@ -551,8 +551,8 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
   char                 *c;
 
   TRACEENTER();
-  WriteLogCS(PROGRAM_NAME, "[Action] Importing settings (Text)...");
-  WriteLogCS(PROGRAM_NAME, "----------------------------------------");
+  WriteLogMC(PROGRAM_NAME, "[Action] Importing settings (Text)...");
+  WriteLogMC(PROGRAM_NAME, "----------------------------------------");
   CurLine = 0;
 
 //  Buffer = (char*) malloc(BufSize);
@@ -596,7 +596,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
         }
         else
         {
-          WriteLogCS(PROGRAM_NAME, "  Error: Invalid file format (head line)!");
+          WriteLogMC(PROGRAM_NAME, "  Error: Invalid file format (head line)!");
           ret = FALSE;
           break;
         }
@@ -619,11 +619,11 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
         {
           if (CurMode == SM_Header)
           {
-            WriteLogCS(PROGRAM_NAME, "  Error: Invalid file header!");
+            WriteLogMC(PROGRAM_NAME, "  Error: Invalid file header!");
             ret = FALSE;
             continue;
           }
-          WriteLogCSf(PROGRAM_NAME, "  New Section: '%s'", Buffer);
+          WriteLogMCf(PROGRAM_NAME, "  New Section: '%s'", Buffer);
           if (strcmp(Buffer, "[Satellites]") == 0)
             CurMode = SM_Satellites;
           else if (strcmp(Buffer, "[Transponders]") == 0)
@@ -636,7 +636,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
             CurMode = SM_Favorites;
           else
           {
-            WriteLogCSf(PROGRAM_NAME, "  Warning: Unknown section: %s! (line %d)", Buffer, CurLine);
+            WriteLogMCf(PROGRAM_NAME, "  Warning: Unknown section: %s! (line %d)", Buffer, CurLine);
             CurMode = SM_Ignore;
           }
           continue;
@@ -657,7 +657,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
             if (Value == 1)
               HeaderCheck[0] = TRUE;
             else
-              WriteLogCSf(PROGRAM_NAME, "  Incorrect file version %lu.", Value);
+              WriteLogMCf(PROGRAM_NAME, "  Incorrect file version %lu.", Value);
           }
           else if (strcmp(Name, "FileSize") == 0)
           {
@@ -665,7 +665,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
             if (Value == fs)
               HeaderCheck[1] = TRUE;
             else
-              WriteLogCSf(PROGRAM_NAME, "  Incorrect file size %lu (should be %lu).", FileHeader.FileSize, fs);
+              WriteLogMCf(PROGRAM_NAME, "  Incorrect file size %lu (should be %lu).", FileHeader.FileSize, fs);
           }
           else if (strcmp(Name, "SystemType") == 0)
           {
@@ -673,7 +673,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
             if (Value == CurSystemType)
               HeaderCheck[2] = TRUE;
             else
-              WriteLogCSf(PROGRAM_NAME, "  Incorrect system type %u (should be %u).", FileHeader.SystemType, CurSystemType);
+              WriteLogMCf(PROGRAM_NAME, "  Incorrect system type %u (should be %u).", FileHeader.SystemType, CurSystemType);
           }
           else if (strcmp(Name, "NrOfLines") == 0)
             NrOfLines = Value;
@@ -694,7 +694,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           {
             CurMode = SM_HeaderChecked;
             ret = ret && DeleteAllSettings(OverwriteSatellites == 2);
-            WriteLogCS(PROGRAM_NAME, "Importing settings:");
+            WriteLogMC(PROGRAM_NAME, "Importing settings:");
           }
         }
       }
@@ -775,20 +775,20 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
             {
               if ((IstSat.SatPosition != CurSat.SatPosition) || (strcmp(IstSat.SatName, CurSat.SatName) != 0))
               {
-                WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", NrSats, CurSat.SatName, IstSat.SatName);
+                WriteLogMCf(PROGRAM_NAME, "  Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", NrSats, CurSat.SatName, IstSat.SatName);
                 if (OverwriteSatellites == 1)
                 {
-                  WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites from now...");
+                  WriteLogMC(PROGRAM_NAME, "  --> Will overwrite satellites from now...");
                   OverwriteSatellites = 2;
                 }
               }
             }
             else
             {
-              WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d ('%s') not found in receiver!", NrSats, CurSat.SatName);
+              WriteLogMCf(PROGRAM_NAME, "  Warning: Satellite nr. %d ('%s') not found in receiver!", NrSats, CurSat.SatName);
               if (OverwriteSatellites == 1)
               {
-                WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites from now...");
+                WriteLogMC(PROGRAM_NAME, "  --> Will overwrite satellites from now...");
                 OverwriteSatellites = 2;
               }
               else 
@@ -806,7 +806,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
             if (ret)
               NrImpSatellites++;
             else
-              WriteLogCSf(PROGRAM_NAME, "  Error in satellite nr. %d! (line %d)", NrSats, CurLine);
+              WriteLogMCf(PROGRAM_NAME, "  Error in satellite nr. %d! (line %d)", NrSats, CurLine);
           }
           NrSats++;
           break;
@@ -849,7 +849,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           if (ret)
             NrImpTransponders++;
           else
-            WriteLogCSf(PROGRAM_NAME, "  Error in transponder nr. %d! (line %d)", NrImpTransponders, CurLine);
+            WriteLogMCf(PROGRAM_NAME, "  Error in transponder nr. %d! (line %d)", NrImpTransponders, CurLine);
           break;
         }
 
@@ -897,7 +897,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           if (ret)
             (CurMode==SM_TVServices) ? NrImpTVServices++ : NrImpRadioServices++;
           else
-            WriteLogCSf(PROGRAM_NAME, "  Error in %s-service nr. %d! (line %d)", (CurMode==SM_TVServices) ? "TV" : "Radio", (CurMode==SM_TVServices) ? NrImpTVServices : NrImpRadioServices, CurLine);
+            WriteLogMCf(PROGRAM_NAME, "  Error in %s-service nr. %d! (line %d)", (CurMode==SM_TVServices) ? "TV" : "Radio", (CurMode==SM_TVServices) ? NrImpTVServices : NrImpRadioServices, CurLine);
           break;
         }
 
@@ -932,7 +932,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
               i++;
             }
 #ifdef FULLDEBUG
-  WriteLogCSf(PROGRAM_NAME, "  FavGroup %d: Name = '%s', ServiceType = '%c', Entries = %d: %d, %d, %d", NrImpFavGroups, CurFavGroup.GroupName, curSvcType, CurFavGroup.NrEntries, CurFavGroup.SvcNum[0],CurFavGroup.SvcNum[1],CurFavGroup.SvcNum[2]);
+  WriteLogMCf(PROGRAM_NAME, "  FavGroup %d: Name = '%s', ServiceType = '%c', Entries = %d: %d, %d, %d", NrImpFavGroups, CurFavGroup.GroupName, curSvcType, CurFavGroup.NrEntries, CurFavGroup.SvcNum[0],CurFavGroup.SvcNum[1],CurFavGroup.SvcNum[2]);
 #endif
             ret = FlashFavoritesSetInfo(NrImpFavGroups, &CurFavGroup);
           }
@@ -940,7 +940,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           if (ret)
             NrImpFavGroups++;
           else
-            WriteLogCSf(PROGRAM_NAME, "  Error in FavGroup nr. %d! (line %d)", NrImpFavGroups, CurLine);
+            WriteLogMCf(PROGRAM_NAME, "  Error in FavGroup nr. %d! (line %d)", NrImpFavGroups, CurLine);
           break;
         }
 
@@ -951,20 +951,20 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
     fclose(fImportFile);
     free(Buffer);
 
-    WriteLogCSf(PROGRAM_NAME, "  %d of %d lines processed.", CurLine, NrOfLines);
-    WriteLogCSf(PROGRAM_NAME, "  %d of %d Satellites, %d of %d Transponders, %d of %d TVServices, %d of %d RadioServices, %d of %d FavGroups imported.",
+    WriteLogMCf(PROGRAM_NAME, "  %d of %d lines processed.", CurLine, NrOfLines);
+    WriteLogMCf(PROGRAM_NAME, "  %d of %d Satellites, %d of %d Transponders, %d of %d TVServices, %d of %d RadioServices, %d of %d FavGroups imported.",
                                NrImpSatellites, FileHeader.NrSatellites, NrImpTransponders, FileHeader.NrTransponders, NrImpTVServices, FileHeader.NrTVServices, NrImpRadioServices, FileHeader.NrRadioServices, NrImpFavGroups, FileHeader.NrFavGroups);
   }
   else
-    WriteLogCS(PROGRAM_NAME, "  File not found!");
+    WriteLogMC(PROGRAM_NAME, "  File not found!");
 
 //  if(ret)
 //    FlashProgram();
 
   if (ret)
-    WriteLogCSf(PROGRAM_NAME, "--> Import '%s' (Text) successful.", FileName);
+    WriteLogMCf(PROGRAM_NAME, "--> Import '%s' (Text) successful.", FileName);
   else
-    WriteLogCSf(PROGRAM_NAME, "--> Error during import '%s'.", FileName);
+    WriteLogMCf(PROGRAM_NAME, "--> Error during import '%s'.", FileName);
   TRACEEXIT();
   return ret;
 }

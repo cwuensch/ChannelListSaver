@@ -11,6 +11,7 @@
 #define DESCRIPTION           "Im-/Export of Sat, Transponders, Channels & Favs."
 
 #define LOGDIR                "/ProgramFiles/Settings/" PROGRAM_NAME
+#define LOGFILENAME           PROGRAM_NAME ".log"
 #define LNGFILENAME           PROGRAM_NAME ".lng"
 #define INIFILENAME           PROGRAM_NAME ".ini"
 
@@ -84,8 +85,9 @@ extern size_t           SIZE_Favorites;
 int   TAP_Main(void);
 dword TAP_EventHandler(word event, dword param1, dword param2);
 
-void  WriteLogCS(char *ProgramName, char *s);
-void  WriteLogCSf(char *ProgramName, const char *format, ...) __attribute__ ((format(__printf__, 2, 3)));
+void  CloseLogMC(void);
+void  WriteLogMC(char *ProgramName, char *s);
+void  WriteLogMCf(char *ProgramName, const char *format, ...) __attribute__ ((format(__printf__, 2, 3)));
 bool  ConvertUTFStr(char *DestStr, char *SourceStr, int MaxLen, bool ToUnicode);
 bool  HDD_SetFileDateTime(char const *FileName, char const *AbsDirectory, dword NewDateTime);
 

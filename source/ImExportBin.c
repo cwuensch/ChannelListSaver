@@ -40,8 +40,8 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
   bool                  ret = FALSE;
 
   TRACEENTER();
-  WriteLogCS(PROGRAM_NAME, "[Action] Exporting settings (binary)...");
-  WriteLogCS(PROGRAM_NAME, "----------------------------------------");
+  WriteLogMC(PROGRAM_NAME, "[Action] Exporting settings (binary)...");
+  WriteLogMC(PROGRAM_NAME, "----------------------------------------");
 
   TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
   fExportFile = fopen(AbsFileName, "wb");
@@ -72,7 +72,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
           ret = (fwrite(p, SIZE_SatInfo_TMSx, FileHeader.NrSatellites, fExportFile) == (dword)FileHeader.NrSatellites) && ret;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Satellites exported." : "Satellites error (%d)!", FileHeader.NrSatellites);
+    WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d Satellites exported." : "Satellites error (%d)!", FileHeader.NrSatellites);
 
     {
       // [Transponders]
@@ -89,7 +89,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
           ret = (fwrite(p, SIZE_TpInfo_TMSx, FileHeader.NrTransponders, fExportFile) == (dword)FileHeader.NrTransponders) && ret;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Transponders exported." : "Transponders error (%d)!", FileHeader.NrTransponders);
+    WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d Transponders exported." : "Transponders error (%d)!", FileHeader.NrTransponders);
 
     {
       // [TVServices]
@@ -106,7 +106,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
           ret = (fwrite(p, SIZE_Service_TMSx, FileHeader.NrTVServices, fExportFile) == (dword)FileHeader.NrTVServices) && ret;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d TVServices exported." : "TVServices error (%d)!", FileHeader.NrTVServices);
+    WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d TVServices exported." : "TVServices error (%d)!", FileHeader.NrTVServices);
 
     {
       // [RadioServices]
@@ -123,7 +123,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
           ret = (fwrite(p, SIZE_Service_TMSx, FileHeader.NrRadioServices, fExportFile) == (dword)FileHeader.NrRadioServices) && ret;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d RadioServices exported." : "RadioServices error (%d)!", FileHeader.NrRadioServices);
+    WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d RadioServices exported." : "RadioServices error (%d)!", FileHeader.NrRadioServices);
 
     {
       // [Favorites]
@@ -139,7 +139,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
         ret = fwrite(&FavGroup, sizeof(tFavorites), 1, fExportFile) && ret;
       }
     }
-    WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d Favorite-Groups exported." : "Favorites error (%d)!", FileHeader.NrFavGroups);
+    WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d Favorite-Groups exported." : "Favorites error (%d)!", FileHeader.NrFavGroups);
 
     {
       char *p1, *p2;
@@ -155,7 +155,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
       {
         ret = (fwrite(p2, 1, FileHeader.ProviderNamesLength, fExportFile) == (dword)FileHeader.ProviderNamesLength) && ret;
       }
-      WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d ProviderNames exported (%d Bytes)." : "ProviderNames error (%d, %d Bytes)!", NrProviderNames, FileHeader.ProviderNamesLength);
+      WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d ProviderNames exported (%d Bytes)." : "ProviderNames error (%d, %d Bytes)!", NrProviderNames, FileHeader.ProviderNamesLength);
 
       // [ServiceNames]
       FileHeader.ServiceNamesLength = GetLengthOfServiceNames(&NrServiceNames);
@@ -165,7 +165,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
       {
         ret = (fwrite(p1, 1, FileHeader.ServiceNamesLength, fExportFile) == (dword)FileHeader.ServiceNamesLength) && ret;
       }
-      WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d ServiceNames exported (%d Bytes)." : "ServiceNames error (%d, %d Bytes)!", NrServiceNames, FileHeader.ServiceNamesLength);
+      WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d ServiceNames exported (%d Bytes)." : "ServiceNames error (%d, %d Bytes)!", NrServiceNames, FileHeader.ServiceNamesLength);
     }
 
     FileHeader.FileSize = ftell(fExportFile);
@@ -181,14 +181,14 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
     }
   }
   else
-    WriteLogCS(PROGRAM_NAME, "  File not found!");
+    WriteLogMC(PROGRAM_NAME, "  File not found!");
 
   if (ret)
-    WriteLogCSf(PROGRAM_NAME, "--> Export '%s' (binary) successful.", FileName);
+    WriteLogMCf(PROGRAM_NAME, "--> Export '%s' (binary) successful.", FileName);
   else
   {
     if(TAP_Hdd_Exist(FileName)) TAP_Hdd_Delete(FileName);
-    WriteLogCSf(PROGRAM_NAME, "--> Error during export '%s'.", FileName);
+    WriteLogMCf(PROGRAM_NAME, "--> Error during export '%s'.", FileName);
   }
   TRACEEXIT();
   return ret;
@@ -206,8 +206,8 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
   bool                  ret = FALSE;
 
   TRACEENTER();
-  WriteLogCS(PROGRAM_NAME, "[Action] Importing settings (binary)...");
-  WriteLogCS(PROGRAM_NAME, "----------------------------------------");
+  WriteLogMC(PROGRAM_NAME, "[Action] Importing settings (binary)...");
+  WriteLogMC(PROGRAM_NAME, "----------------------------------------");
 
   TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
   fImportFile = fopen(AbsFileName, "rb");
@@ -254,10 +254,10 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
                   FlashSatTablesDecode(s + i * SIZE_SatInfo_TMSx, &IstSat);
                   if ((IstSat.SatPosition != CurSat.SatPosition) || (strcmp(IstSat.SatName, CurSat.SatName) != 0))
                   {
-                    WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", i, CurSat.SatName, IstSat.SatName);
+                    WriteLogMCf(PROGRAM_NAME, "  Warning: Satellite nr. %d does not match! (Import: '%s', Receiver: '%s')", i, CurSat.SatName, IstSat.SatName);
                     if (OverwriteSatellites == 1)
                     {
-                      WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites...");
+                      WriteLogMC(PROGRAM_NAME, "  --> Will overwrite satellites...");
                       OverwriteSatellites = 2;
 //                      break;
                     }
@@ -265,11 +265,11 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
                 }
                 else
                 {
-                  WriteLogCSf(PROGRAM_NAME, "  Warning: Satellite nr. %d ('%s') not found in receiver!", i, CurSat.SatName);
+                  WriteLogMCf(PROGRAM_NAME, "  Warning: Satellite nr. %d ('%s') not found in receiver!", i, CurSat.SatName);
                   if (OverwriteSatellites)
                   {
                     if (OverwriteSatellites == 1)
-                      WriteLogCS(PROGRAM_NAME, "  --> Will overwrite satellites...");
+                      WriteLogMC(PROGRAM_NAME, "  --> Will overwrite satellites...");
                     OverwriteSatellites = 2;
 //                    break;
                   }
@@ -284,7 +284,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
           if (ret)
           {
             ret = ret && DeleteAllSettings(OverwriteSatellites == 2);
-            WriteLogCS(PROGRAM_NAME, "Importing settings:");
+            WriteLogMC(PROGRAM_NAME, "Importing settings:");
 
             if (ret && (OverwriteSatellites == 2))
             {
@@ -300,7 +300,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
 //              memset(s + FileHeader.NrSatellites * SIZE_SatInfo_TMSx, 0, SIZE_SatInfo_TMSx);
               NrImpSatellites = FileHeader.NrSatellites;
             }
-            WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Satellites imported." : "  Satellites error (%d / %d)!", ((OverwriteSatellites==2) ? NrImpSatellites : 0), FileHeader.NrSatellites);
+            WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d / %-5d Satellites imported." : "  Satellites error (%d / %d)!", ((OverwriteSatellites==2) ? NrImpSatellites : 0), FileHeader.NrSatellites);
           }
 
           if (ret)
@@ -332,7 +332,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
                   }
                   else
                   {
-                    WriteLogCSf(PROGRAM_NAME, "  Error: Invalid sat index in transponder %d.", i);
+                    WriteLogMCf(PROGRAM_NAME, "  Error: Invalid sat index in transponder %d.", i);
                     *NrTransponders = i;
                     ret = FALSE;
                     break;
@@ -343,7 +343,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
             }
             else
               ret = FALSE;
-            WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Transponders imported." : "  Transponders error (%d / %d)!", NrImpTransponders, FileHeader.NrTransponders);
+            WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d / %-5d Transponders imported." : "  Transponders error (%d / %d)!", NrImpTransponders, FileHeader.NrTransponders);
           }
 
           // [Services]
@@ -410,7 +410,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
                 }
                 else
                 {
-                  WriteLogCSf(PROGRAM_NAME, "  Warning: Invalid sat (%d) or transponder (%d) index for %sService %d! (NrImpSats=%d, NrTps[%d]=%d)", newServices[i].SatIdx, newServices[i].TPIdx, ((j==0) ? "TV" : "Radio"), i, NrImpSatellites, newServices[i].SatIdx, GetNrTranspOfSat_TMSx((TYPE_SatInfo_TMSx*)(s + newServices[i].SatIdx * SIZE_SatInfo_TMSx)));
+                  WriteLogMCf(PROGRAM_NAME, "  Warning: Invalid sat (%d) or transponder (%d) index for %sService %d! (NrImpSats=%d, NrTps[%d]=%d)", newServices[i].SatIdx, newServices[i].TPIdx, ((j==0) ? "TV" : "Radio"), i, NrImpSatellites, newServices[i].SatIdx, GetNrTranspOfSat_TMSx((TYPE_SatInfo_TMSx*)(s + newServices[i].SatIdx * SIZE_SatInfo_TMSx)));
                   ret = FALSE;
                 }
               }
@@ -426,9 +426,9 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
               ret = FALSE;
 
             if (j==0)
-              WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d TVServices imported." : "  TVServices error (%d / %d)!", NrImpTVServices, FileHeader.NrTVServices);
+              WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d / %-5d TVServices imported." : "  TVServices error (%d / %d)!", NrImpTVServices, FileHeader.NrTVServices);
             else
-              WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d RadioServices imported." : "  RadioServices error (%d / %d)!", NrImpRadioServices, FileHeader.NrRadioServices);
+              WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d / %-5d RadioServices imported." : "  RadioServices error (%d / %d)!", NrImpRadioServices, FileHeader.NrRadioServices);
           }
 
           if (ret)
@@ -467,28 +467,28 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
                   ret = FALSE;
               }
             }
-            WriteLogCSf(PROGRAM_NAME, (ret) ? "%5d / %-5d Favorite-Groups imported." : "  Favorites error (%d / %d)!", NrImpFavGroups, FileHeader.NrFavGroups);
+            WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d / %-5d Favorite-Groups imported." : "  Favorites error (%d / %d)!", NrImpFavGroups, FileHeader.NrFavGroups);
           }
         }
 
         TAP_MemFree(Buffer);
       }
       else
-        WriteLogCS(PROGRAM_NAME, "  Not enough memory!");
+        WriteLogMC(PROGRAM_NAME, "  Not enough memory!");
     }
     else
-      WriteLogCS(PROGRAM_NAME, "  Invalid header format!");
+      WriteLogMC(PROGRAM_NAME, "  Invalid header format!");
     fclose(fImportFile);
   }
   else
-    WriteLogCS (PROGRAM_NAME, "  File not found!");
+    WriteLogMC (PROGRAM_NAME, "  File not found!");
 //  if(ret)
 //    FlashProgram();
 
   if (ret)
-    WriteLogCSf(PROGRAM_NAME, "--> Import '%s' (binary) successful.", FileName);
+    WriteLogMCf(PROGRAM_NAME, "--> Import '%s' (binary) successful.", FileName);
   else
-    WriteLogCSf(PROGRAM_NAME, "--> Error during import '%s'.", FileName);
+    WriteLogMCf(PROGRAM_NAME, "--> Error during import '%s'.", FileName);
 
   TRACEEXIT();
   return ret;
