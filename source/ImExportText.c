@@ -912,17 +912,19 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           char                  *p;
 
           memset(&CurFavGroup, 0, sizeof(tFavorites));
-          ret = (sscanf(Buffer, "%*i ; %11[^;\r\n] ; %c ;%n", CurFavGroup.GroupName, &curSvcType, &BytesRead) == 2) && ret;
+          ret = (sscanf(Buffer, "%*i ; %11[^;\r\n] ; %c %n", CurFavGroup.GroupName, &curSvcType, &BytesRead) == 2) && ret;
           RTrim(CurFavGroup.GroupName);
 
           if (ret)
           {
             int i = 0;
             p = &Buffer[BytesRead];
+            while ((*p == ';') || (*p == ',') || (*p == ' ')) p++;
             while (p && p[0] && (i < NrFavsPerGroup))
             {
               if (*p == ',') p++;
               curSvcNum = strtol(p, &p, 0);
+//TAP_PrintNet("FavGroup: i=%lu, p[0]=%u, p=%s, curSvcNum=%lu\n", i, p[0], p, curSvcNum)
 //              if (curSvcNum < (curSvcType == 'T' ? NrImpTVServices : NrImpRadioServices))
 //              {
                 CurFavGroup.SvcNum[CurFavGroup.NrEntries]  = curSvcNum;
