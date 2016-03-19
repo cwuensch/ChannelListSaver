@@ -4,7 +4,7 @@
 #define TAP_SPrint    snprintf
 
 #define PROGRAM_NAME          "ChannelListSaver"
-#define VERSION               "0.7c"
+#define VERSION               "0.8"
 #define TAPID                 0x2A0A0002
 #define AUTHOR                "chris86"
 //#define DESCRIPTION           "Im-/Export of Sat-, Transponder- & Channel-Lists"
@@ -16,7 +16,9 @@
 #define INIFILENAME           PROGRAM_NAME ".ini"
 
 
-#define EXPORTFILENAME        "Channels"
+#define DATFILENAME           "Channels.dat"
+#define TXTFILENAME           "Channels.txt"
+#define STDFILENAME           "Settings.std"
 #define CRLF                  "\r\n"
 
 #define PROVIDERNAMELENGTH    21
@@ -24,7 +26,23 @@
 #define SERVICENAMESLENGTH    39996    // 40000 / 40004 / 39996 ***  ?
 
 
-typedef struct tProvicerName
+typedef enum
+{
+  TAP_CMD_NONE = 0,
+  TAP_CMD_EXPORT_TXT = 1,
+  TAP_CMD_IMPORT_TXT = 2
+} tTAPCommands;
+
+typedef struct
+{
+  byte ImExport:1;       // 1 for Import, 0 for Export
+  byte ImportFormat:2;   // 0 - Binary, 1 - Text, 2 - System
+  byte SilentMode:1;
+  byte Reserved:4;
+  char FileName[MAX_FILE_NAME_SIZE];
+} tParameters;
+
+typedef struct tProviderName
 {
   char name[PROVIDERNAMELENGTH];
 } tProviderName;
