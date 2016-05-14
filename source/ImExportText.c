@@ -479,7 +479,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
     //#Nr; GroupName; T/R; SvcNums
     {
       tFavorites             CurFavGroup;
-      char                  *p;
+      char                   *p, CurGroupName[13]; CurGroupName[12] = '\0';
 
       ret = (fprintf(fExportFile, "[Favorites]" CRLF)                   > 0) && ret;
       ret = (fprintf(fExportFile, "#Nr; GroupName   ; T/R;  SvcNums" CRLF)  > 0) && ret;
@@ -490,9 +490,10 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
       {
         if (FlashFavoritesGetInfo(i, &CurFavGroup))
         {
-          while ((p = strchr(CurFavGroup.GroupName, ';')))
+          strncpy(CurGroupName, CurFavGroup.GroupName, 12);  // GroupName ist kein null-terminierter string
+          while ((p = strchr(CurGroupName, ';')))
             p[0] = '_';
-          ret = (fprintf(fExportFile, "%3d; %-12s;   %c;" , i, CurFavGroup.GroupName, ((CurFavGroup.SvcType[0]==0) ? 'T' : 'R')) > 0) && ret;
+          ret = (fprintf(fExportFile, "%3d; %-12s;   %c;" , i, CurGroupName, ((CurFavGroup.SvcType[0]==0) ? 'T' : 'R')) > 0) && ret;
           for (j = 0; j < CurFavGroup.NrEntries; j++)
             ret = (fprintf(fExportFile, (j==0 ? "  %hu" : ", %hu"), CurFavGroup.SvcNum[j]) > 0) && ret;
 //          ret = (fprintf(fExportFile, "; %#01X", CurFavGroup.unused1)   > 0) && ret;
@@ -912,7 +913,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           char                  *p;
 
           memset(&CurFavGroup, 0, sizeof(tFavorites));
-          ret = (sscanf(Buffer, "%*i ; %11[^;\r\n] ; %c %n", CurFavGroup.GroupName, &curSvcType, &BytesRead) == 2) && ret;
+          ret = (sscanf(Buffer, "%*i ; %12[^;\r\n] ; %c %n", CurFavGroup.GroupName, &curSvcType, &BytesRead) == 2) && ret;
           RTrim(CurFavGroup.GroupName);
 
           if (ret)

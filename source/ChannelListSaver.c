@@ -210,13 +210,16 @@ int TAP_Main(void)
         #ifdef FULLDEBUG
           ExportSettings("Debug_AfterTxtImport.dat", TAPFSROOT LOGDIR);
         #endif
-        if (ret)
+        if (!SilentMode)
         {
-          TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportSuccess), LangGetString(LS_Text));
-          ShowErrorMessage(TempStr, NULL);
+          if (ret)
+          {
+            TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportSuccess), LangGetString(LS_Text));
+            ShowErrorMessage(TempStr, NULL);
+          }
+          else
+            ShowErrorMessage(LangGetString(LS_ImportError), NULL);
         }
-        else
-          ShowErrorMessage(LangGetString(LS_ImportError), NULL);
       }
     }
 
@@ -234,25 +237,35 @@ int TAP_Main(void)
         #ifdef FULLDEBUG
           ExportSettings("Debug_AfterBinImport.dat", TAPFSROOT LOGDIR);
         #endif
-        if (ret)
+        if (!SilentMode)
         {
-          TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportSuccess), LangGetString(LS_Binary));
-          if (!SilentMode) ShowErrorMessage(TempStr, NULL);
+          if (ret)
+          {
+            TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportSuccess), LangGetString(LS_Binary));
+            ShowErrorMessage(TempStr, NULL);
+          }
+          else
+            ShowErrorMessage(LangGetString(LS_ImportError), NULL);
         }
-        else
-          ShowErrorMessage(LangGetString(LS_ImportError), NULL);
       }
     }
 
     if (Answer == 2)
     {
       WriteLogMC(PROGRAM_NAME, "[Aktion] Exportiere Settings...");
-      ret = ExportSettings(DatFileName,      TAPFSROOT LOGDIR);
-      ret = ExportSettings_Text(TxtFileName, TAPFSROOT LOGDIR) && ret;
-      ret =(HDD_ImExportChData(StdFileName,  TAPFSROOT LOGDIR, FALSE) || ((void*)FIS_fwAppl_ExportChData() == NULL)) && ret;
-      if (!ret)
+      ret = TRUE;
+      if (!StartParameter || ImportFormat == 0)
+        ret = ExportSettings(DatFileName,      TAPFSROOT LOGDIR) && ret;
+      if (!StartParameter || ImportFormat == 1)
+        ret = ExportSettings_Text(TxtFileName, TAPFSROOT LOGDIR) && ret;
+      if (!StartParameter || ImportFormat == 2)
+        ret =(HDD_ImExportChData(StdFileName,  TAPFSROOT LOGDIR, FALSE) || ((void*)FIS_fwAppl_ExportChData() == NULL)) && ret;
+      if (!ret && !SilentMode)
         ShowErrorMessage(LangGetString(LS_ExportError), NULL);
     }
+
+    if (StartParameter)
+      StartParameter->ResultCode = ret;
   }
   else
     ShowErrorMessage(LangGetString(LS_UnknownSystemType), NULL);

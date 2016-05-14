@@ -38,7 +38,8 @@ typedef struct
   byte ImExport:1;       // 1 for Import, 0 for Export
   byte ImportFormat:2;   // 0 - Binary, 1 - Text, 2 - System
   byte SilentMode:1;
-  byte Reserved:4;
+  byte Reserved:3;
+  byte ResultCode:1;     // 1 - TRUE, 0 - FALSE
   char FileName[MAX_FILE_NAME_SIZE];
 } tParameters;
 
