@@ -910,7 +910,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           word                   curSvcNum;
           char                   curSvcType;
           int                    BytesRead = 0;
-          char                  *p;
+          char                  *p, *p2 = NULL;
 
           memset(&CurFavGroup, 0, sizeof(tFavorites));
           ret = (sscanf(Buffer, "%*i ; %12[^;\r\n] ; %c %n", CurFavGroup.GroupName, &curSvcType, &BytesRead) == 2) && ret;
@@ -924,7 +924,12 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
             while (p && p[0] && (i < NrFavsPerGroup))
             {
               if (*p == ',') p++;
-              curSvcNum = strtol(p, &p, 0);
+              curSvcNum = strtol(p, &p2, 0);
+              if (!p2 || (p2 == p))
+                break;
+              else
+                p = p2;
+
 //TAP_PrintNet("FavGroup: i=%lu, p[0]=%u, p=%s, curSvcNum=%lu\n", i, p[0], p, curSvcNum)
 //              if (curSvcNum < (curSvcType == 'T' ? NrImpTVServices : NrImpRadioServices))
 //              {
