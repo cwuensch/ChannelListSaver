@@ -966,8 +966,8 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
   else
     WriteLogMC(PROGRAM_NAME, "  File not found!");
 
-//  if(ret)
-//    FlashProgram();
+  if(ret)
+    FlashProgram();
 
   if (ret)
     WriteLogMCf(PROGRAM_NAME, "--> Import '%s' (Text) successful.", FileName);

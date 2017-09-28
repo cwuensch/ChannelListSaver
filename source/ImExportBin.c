@@ -482,8 +482,8 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
   }
   else
     WriteLogMC (PROGRAM_NAME, "  File not found!");
-//  if(ret)
-//    FlashProgram();
+  if(ret)
+    FlashProgram();
 
   if (ret)
     WriteLogMCf(PROGRAM_NAME, "--> Import '%s' (binary) successful.", FileName);

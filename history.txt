@@ -1,3 +1,14 @@
+v0.8          NEU:
+(2016-05-15)    * ChannelListSaver für unbeaufsichtigten Start vorbereitet (jkIT)
+              BUGFIXES:
+                - automatische Beendigung trotz TSR-Bug
+                - Favourite-Groups ohne Inhalt (0 Einträge) wurden fehlerhaft importiert
+                - Leerzeichen (0x20) wurde in ConvertUTF8Str() als Codepage-Identifikator gewertet                * Löschen der TV- und Radio-Senderlisten wurde nicht ausgeführt
+                - FavGroupName ist kein nullterminierter String
+              INTERNALS:
+                - Logfile-Ausgabe über fopen, Datei bleibt geöffnet, zeilenweises Buffering
+
+
 v0.7          NEU:
 (2015-10-31)    * ini-Option "RestoreNameLock=1" für Wiederherstellen des NameLock-Flags
               BUGFIXES:
