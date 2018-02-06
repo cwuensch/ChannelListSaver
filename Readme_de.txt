@@ -53,7 +53,7 @@ Text-Format:
 Warnungen:
   * Es werden NUR TMS-Modelle (z.B. SRP-2401CI+, CRP-2401, ...) unterstützt, KEINE Smart-Modelle!!!
   * Rückspielen ist nur innerhalb derselben Geräteklasse (Satellit / Kabel / Terrestrisch) möglich!
-  * Beim Import der Einstellungen werden sämtliche Timer gelöscht.
+  * Nach dem Import sollten die Timer kontrolliert werden.
 
 Known Bugs:
   - Nach einem Zurücksetzen der Service-Liste (über das Topf-Menü) und anschließendem Import durch dieses TAP werden die Favoriten-Listen manchmal vom Topf wieder überschrieben. Ein nochmaliger Import behebt das Problem.

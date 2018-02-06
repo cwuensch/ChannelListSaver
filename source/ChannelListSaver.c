@@ -79,6 +79,9 @@ static int   ShowConfirmationDialog(char *MessageStr);
 static void  ShowErrorMessage(char *MessageStr, char *TitleStr);
 static void  LoadINI(void);
 static void  SaveINI(void);
+static word* GetSETimerID(int TimerNr);
+static tTimerExt* SaveTimers(int *NrOldTimers);
+static void  RestoreTimers(tTimerExt *OldTimers, int NrOldTimers);
 
 
 // Globale Variablen
@@ -92,11 +95,15 @@ size_t                  SIZE_Favorites;
 
 //static bool             CSShowMessageBox = FALSE;
 static char            *TxtFileName = TXTFILENAME, *DatFileName = DATFILENAME, *StdFileName = STDFILENAME;
+static tTimerExt       *OldTimers = NULL;
+static int              NrOldTimers = 0;
 static int              ImportFormat = 0;  // 0 - Binary, 1 - Text, 2 - System
 static int              OverwriteSatellites = 1;  // 0 - nie, 1 - auto, 2 - immer
 static bool             RestoreNameLock = FALSE;
 static bool             SilentMode = FALSE;
 static bool             CLSFinished = FALSE;
+
+#define minmax(v,d,a,b)  ( ( ((v) < (a)) || ((v) > (b)) ) ? (d) : (v) )
 
 
 // ============================================================================
@@ -125,7 +132,7 @@ int TAP_Main(void)
 
   // Load Language Strings
   if (TAP_GetSystemVar(SYSVAR_OsdLan) != LAN_German)
-    if(!LangLoadStrings(LNGFILENAME, LS_NrStrings, LAN_English, PROGRAM_NAME))
+    if(!LangLoadStrings(TAPFSROOT LOGDIR "/" LNGFILENAME, LS_NrStrings, LAN_English))
     {
 /*      WriteLogMCf(PROGRAM_NAME, "Language file '%s' not found!\r\n", LNGFILENAME);
       OSDMenuInfoBoxShow(PROGRAM_NAME " " VERSION, "Language file not found!", 500);
@@ -206,7 +213,14 @@ int TAP_Main(void)
         #ifdef FULLDEBUG
           HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
         #endif
+        OldTimers = SaveTimers(&NrOldTimers);
         ret = ImportSettings_Text(TxtFileName, TAPFSROOT LOGDIR, OverwriteSatellites, RestoreNameLock);
+        if (OldTimers)
+        {
+          RestoreTimers(OldTimers, NrOldTimers);
+          TAP_MemFree(OldTimers);
+          OldTimers = NULL;
+        }
         #ifdef FULLDEBUG
           ExportSettings("Debug_AfterTxtImport.dat", TAPFSROOT LOGDIR);
         #endif
@@ -233,7 +247,14 @@ int TAP_Main(void)
         #ifdef FULLDEBUG
           HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
         #endif
+        OldTimers = SaveTimers(&NrOldTimers);
         ret = ImportSettings(DatFileName, TAPFSROOT LOGDIR, OverwriteSatellites, RestoreNameLock);
+        if (OldTimers)
+        {
+          RestoreTimers(OldTimers, NrOldTimers);
+          TAP_MemFree(OldTimers);
+          OldTimers = NULL;
+        }
         #ifdef FULLDEBUG
           ExportSettings("Debug_AfterBinImport.dat", TAPFSROOT LOGDIR);
         #endif
@@ -252,7 +273,7 @@ int TAP_Main(void)
 
     if (Answer == 2)
     {
-      WriteLogMC(PROGRAM_NAME, "[Aktion] Exportiere Settings...");
+      WriteLogMC(PROGRAM_NAME, "[Action] Exporting settings...");
       ret = TRUE;
       if (!StartParameter || ImportFormat == 0)
         ret = ExportSettings(DatFileName,      TAPFSROOT LOGDIR) && ret;
@@ -520,7 +541,8 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
 
   if (ret)
   {
-    HDD_SetFileDateTime(FileName, AbsDirectory, Now(NULL));
+    if (!Import)
+      HDD_SetFileDateTime(FileName, AbsDirectory, Now(NULL));
     WriteLogMCf(PROGRAM_NAME, (Import ? "--> Import '%s' successful." : "--> Export '%s' successful."), FileName);
   }
   else
@@ -681,42 +703,58 @@ void ShowErrorMessage(char *MessageStr, char *TitleStr)
 // ----------------------------------------------------------------------------
 void LoadINI(void)
 {
+  FILE                 *f = NULL;
+  char                 *Buffer = NULL;
+  size_t                BufSize = 0;
+  char                 *c = NULL;
+  int                   p;
+  char                  Name[50];
+  long                  Value = 0;
+
   TRACEENTER();
 
-  INILOCATION IniFileState;
-
-  HDD_TAP_PushDir();
-  HDD_ChangeDir(LOGDIR);
-  IniFileState = INIOpenFile(INIFILENAME, PROGRAM_NAME);
-  if((IniFileState != INILOCATION_NotFound) && (IniFileState != INILOCATION_NewFile))
+  if ((f = fopen(TAPFSROOT LOGDIR "/" INIFILENAME, "rb")) != NULL)
   {
-    ImportFormat        = INIGetInt("ImportFormat",        1, 0, 2);   // 0 - Binary, 1 - Text, 2 - System
-    OverwriteSatellites = INIGetInt("OverwriteSatellites", 1, 0, 2);
-    RestoreNameLock     = INIGetInt("RestoreNameLock",     0, 0, 1) == 1;
-  }
-  INICloseFile();
+    while (getline(&Buffer, &BufSize, f) >= 0)
+    {
+      //Interpret the following characters as remarks: //
+      c = strstr(Buffer, "//");
+      if(c) *c = '\0';
 
-  if(IniFileState == INILOCATION_NewFile)
+      // Remove line breaks in the end
+      p = strlen(Buffer);
+      while (p && (Buffer[p-1] == '\r' || Buffer[p-1] == '\n' || Buffer[p-1] == ';'))
+        Buffer[--p] = '\0';
+
+      if (sscanf(Buffer, "%49[^= ] = %lu", Name, &Value) == 2)
+      {
+        if      (strncmp(Name, "ImportFormat",        12) == 0)   ImportFormat         =  minmax(Value,   1,   0,   2);
+        else if (strncmp(Name, "OverwriteSatellites", 19) == 0)   OverwriteSatellites  =  minmax(Value,   1,   0,   2);
+        else if (strncmp(Name, "RestoreNameLock",     15) == 0)   RestoreNameLock      =  (Value != 0);
+      }
+    }
+    fclose(f);
+  }
+  else
     SaveINI();
-  HDD_TAP_PopDir();
 
   TRACEEXIT();
 }
 
 void SaveINI(void)
 {
+  FILE *f = NULL;
   TRACEENTER();
 
-  HDD_TAP_PushDir();
-  HDD_ChangeDir(LOGDIR);
-  INIOpenFile(INIFILENAME, PROGRAM_NAME);
-  INISetInt ("ImportFormat",        ImportFormat);
-  INISetInt ("OverwriteSatellites", OverwriteSatellites);
-  INISetInt ("RestoreNameLock",     RestoreNameLock ? 1 : 0);
-  INISaveFile(INIFILENAME, INILOCATION_AtCurrentDir, NULL);
-  INICloseFile();
-  HDD_TAP_PopDir();
-
+  if ((f = fopen(TAPFSROOT LOGDIR "/" INIFILENAME, "wb")) != NULL)
+  {
+    fprintf(f, "[ChannelListSaver]\r\n");
+    fprintf(f, "%s=%d\r\n",  "ImportFormat",        ImportFormat);
+    fprintf(f, "%s=%d\r\n",  "OverwriteSatellites", OverwriteSatellites);
+    fprintf(f, "%s=%d\r\n",  "RestoreNameLock",     RestoreNameLock  ?  1  :  0);
+    fclose(f);
+    HDD_SetFileDateTime(INIFILENAME, TAPFSROOT LOGDIR, 0);
+  }
   TRACEEXIT();
 }
 
@@ -832,13 +870,99 @@ int GetLengthOfProvNames(int *NrProviderNames)
   return Result;
 }
 
+word* GetSETimerID(int TimerNr)
+{
+  byte                 *p;
+  TYPE_Timer_TMSC      *t;
+  word                 *ret = NULL;
+  TRACEENTER();
+
+  p = (byte*)(FIS_vFlashBlockTimer());
+  if(p)
+  {
+    p += (TimerNr * FlashTimerStructSize());
+    t  = (TYPE_Timer_TMSC*) p;
+    ret = &(t->unused5);
+  }
+  TRACEEXIT();
+  return ret;
+}
+
+tTimerExt* SaveTimers(int *NrOldTimers)
+{
+  int                   Count, i, j=0;
+  tTimerExt            *Timers;
+  TRACEENTER();
+
+  Count = TAP_Timer_GetTotalNum();
+  Timers = (tTimerExt*) TAP_MemAlloc(Count * sizeof(tTimerExt));
+  if (Timers)
+  {
+    for(i = 0; i < Count; i++)
+    {
+      // Ermittle TimerInfos
+      if (TAP_Timer_GetInfo(i, &Timers[j].TimerInfo))
+      {
+        // Ermittle ServiceID, SatIndex und TransponderID
+        TYPE_Service_TMSx *p = (TYPE_Service_TMSx*) ((Timers[j].TimerInfo.svcType==SVC_TYPE_Tv) ? FIS_vFlashBlockTVServices() : FIS_vFlashBlockRadioServices());
+        word           *nSvc = (word*)              ((Timers[j].TimerInfo.svcType==SVC_TYPE_Tv) ? FIS_vnTvSvc() : FIS_vnRadioSvc());
+        if (p && nSvc && (Timers[j].TimerInfo.svcNum < *nSvc))
+        {
+          p += Timers[j].TimerInfo.svcNum;
+          Timers[j].ServiceID = p->SVCID;
+          Timers[j].Frequency = GetTransponderFreq_TMSx(p->TPIdx);
+          Timers[j].SETimerID = *(GetSETimerID(i));
+          if (Timers[j].Frequency) j++;
+        }
+      }
+    }
+    WriteLogMCf(PROGRAM_NAME, "  %d / %d timers have been saved.", j, Count);
+  }
+  *NrOldTimers = j;
+  TRACEEXIT();
+  return Timers;
+}
+
+void RestoreTimers(tTimerExt *OldTimers, int NrOldTimers)
+{
+  int                   Count=0, i, j;
+  TRACEENTER();
+
+  if (OldTimers)
+  {
+    for(i = 0; i < NrOldTimers; i++)
+    {
+      // Finde Service mit passendem SvcType, SvcID und Frequency
+      TYPE_Service_TMSx *p = (TYPE_Service_TMSx*) ((OldTimers[i].TimerInfo.svcType==SVC_TYPE_Tv) ? FIS_vFlashBlockTVServices() : FIS_vFlashBlockRadioServices());
+      word           *nSvc = (word*)              ((OldTimers[i].TimerInfo.svcType==SVC_TYPE_Tv) ? FIS_vnTvSvc() : FIS_vnRadioSvc());
+      if (p && nSvc)
+      {
+        for (j = 0; j < *nSvc; j++)
+        {
+          if ((p[j].SVCID == OldTimers[i].ServiceID) && (GetTransponderFreq_TMSx(p[j].TPIdx) == OldTimers[i].Frequency))
+          {
+            OldTimers[i].TimerInfo.svcNum = j;
+            if (TAP_Timer_Add(&OldTimers[i].TimerInfo) == 0)
+            {
+              *(GetSETimerID(i)) = OldTimers[Count].SETimerID;
+              Count++;
+            }
+            break;
+          }
+        }
+      }
+    }
+    WriteLogMCf(PROGRAM_NAME, "  %d / %d timers have been restored.", Count, NrOldTimers);
+  }
+  TRACEEXIT();
+}
+
 bool DeleteTimers(void)
 {
+  int                   Count = 0;
+  bool                  ret = TRUE;
   TRACEENTER();
-  int Count;
-  bool ret = TRUE;
 
-  Count = 0;
   while(TAP_Timer_GetTotalNum() > 0)
   {
     ret = TAP_Timer_Delete(0) && ret;

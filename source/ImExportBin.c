@@ -29,7 +29,19 @@ word* GetpNrTranspOfSat_TMSx(TYPE_SatInfo_TMSx *pSatInfo)
 {  
   return ((word*) pSatInfo);
 }
-
+dword GetTransponderFreq_TMSx(word TPIdx)
+{
+  static byte *t = NULL;
+  if(!t) t = (byte*)(FIS_vFlashBlockTransponderInfo());
+  if(t)
+  {
+    byte *p = t + (TPIdx * SIZE_TpInfo_TMSx);
+    if (CurSystemType == ST_TMSS) return ((TYPE_TpInfo_TMSS*)p)->Frequency;
+    if (CurSystemType == ST_TMST) return ((TYPE_TpInfo_TMST*)p)->Frequency;
+    if (CurSystemType == ST_TMSC) return ((TYPE_TpInfo_TMSC*)p)->Frequency2;
+  }
+  return 0;
+}
 
 bool ExportSettings(char *FileName, char *AbsDirectory)
 {

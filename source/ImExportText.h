@@ -14,6 +14,12 @@ typedef enum
   SM_Ignore
 } tScanMode;
 
+typedef struct
+{
+  word AudioPID:13;
+  word AudioTypeFlag:2;
+  word AudAutoSelect:1;
+} tAudioPIDFlags;
 
 bool          ExportSettings_Text(char *FileName, char *AbsDirectory);
 bool          ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatellites, bool RestoreNameLock);  // 0: nie, 1: auto, 2: immer

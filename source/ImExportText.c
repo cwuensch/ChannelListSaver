@@ -318,10 +318,10 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
 
     // Write the file header
     ret = (fprintf(fExportFile, "[ChannelListSaver]" CRLF)               > 0) && ret;
-    ret = (fprintf(fExportFile, "FileVersion=%d" CRLF,  1)               > 0) && ret;
+    ret = (fprintf(fExportFile, "FileVersion=%d" CRLF,  2)               > 0) && ret;
     FileSizePos = ftell(fExportFile);
     ret = (fprintf(fExportFile, "FileSize=%010d" CRLF,  0)               > 0) && ret;
-    ret = (fprintf(fExportFile, "NrOfLines=%010d" CRLF,  0)              > 0) && ret;
+    ret = (fprintf(fExportFile, "NrOfLines=%010d" CRLF, 0)               > 0) && ret;
     ret = (fprintf(fExportFile, "SystemType=%d" CRLF,   GetSystemType()) > 0) && ret;
     ret = (fprintf(fExportFile, "UTF8System=%d" CRLF,   isUTFToppy())    > 0) && ret;
 
@@ -436,8 +436,8 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
     WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d Transponders exported." : "%5d Transponders error!", FileHeader.NrTransponders);
 
     //[Services]
-    //# Nr; ServiceName            ; SatIdx; TrpIdx; Tuner; VideoType; AudioType;  SvcID; PMTPID; PCRPID; VidPID; AudPID;   LCN; FDel; FCAS; FLock; FSkip; NameLck; Flags2; Unknown2;           ProviderName
-    //   0; Das Erste              ;      1;     44;     3;     MPEG2;     MPEG1;  28106;    100;    101;    101;  32870;     0;    n;    n;     n;     n;       n;    0x1; 00 00 00 00 DC DD;  ARD
+    //# Nr; ServiceName             ; SatIdx; TrpIdx; Tuner; VideoType; AudioType;  SvcID; PMTPID; PCRPID; VidPID; AudPID; ATyp; AAut;   LCN; FDel; FCAS; FLock; FSkip; NameLck; Flags2;           Unknown2;  ProviderName
+    //   0; Das Erste               ;      1;     44;     3;     MPEG2;     MPEG1;  28106;    100;    101;    101;    102;    0;    y;     0;    n;    n;     n;     n;       n;    0x1;  00 00 00 00 DC DD;  ARD
     for (j = 0; j <= 1; j++)
     {
       tFlashService          CurService;
@@ -446,7 +446,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
 
       CurSvcType = (j == 0) ? "TV" : "Radio";
       ret = (fprintf(fExportFile, "[%sServices]" CRLF, CurSvcType)       > 0) && ret;
-      ret = (fprintf(fExportFile, "# Nr; ServiceName             ; SatIdx; TrpIdx; Tuner; VideoType; AudioType;  SvcID; PMTPID; PCRPID; VidPID; AudPID;   LCN; FDel; FCAS; FLock; FSkip; NameLck; Flags2;          Unknown2;  ProviderName" CRLF) > 0) && ret;
+      ret = (fprintf(fExportFile, "# Nr; ServiceName             ; SatIdx; TrpIdx; Tuner; VideoType; AudioType;  SvcID; PMTPID; PCRPID; VidPID; AudPID; ATyp; AAut;   LCN; FDel; FCAS; FLock; FSkip; NameLck; Flags2;           Unknown2;  ProviderName" CRLF) > 0) && ret;
       z += 2;
 
       for(i = 0; i < ((j == 0) ? FileHeader.NrTVServices : FileHeader.NrRadioServices); i++)
@@ -460,10 +460,10 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
 
           ByteArrToStr(StringBuf, CurService.unknown2, sizeof(CurService.unknown2));
           ret = (fprintf(fExportFile, "%4d; %-24s;    %3hhu;  %5hu;   %3hhu;  "                                    // Nr; ServiceName; SatIndex; TransponderIndex; Tuner;
-                                      "%8s;  %8s;  %5hu;  %5hu;  %5hu;  %5hu;  %5hu; "                             // VideoStreamType; AudioStreamType; ServiceID; PMTPID; PCRPID; VideoPID; AudioPID;
-                                      "%5hu;    %c;    %c;     %c;     %c;       %c; %#6hx; %s;  %s" CRLF,         // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
+                                      "%8s;  %8s;  %5hu;  %5hu;  %5hu;  %5hu;  %5hu;  %3hhu;    %c; "              // VideoStreamType; AudioStreamType; ServiceID; PMTPID; PCRPID; VideoPID; AudioPID; AudioType; AudioAutoSelect;
+                                      "%5hu;    %c;    %c;     %c;     %c;       %c; %#6hx;  %s;  %s" CRLF,        // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
                                        i, CurService.ServiceName, CurService.SatIndex, CurService.TransponderIndex, CurService.Tuner,
-                                       VideoTypeToStr(CurService.VideoStreamType), AudioTypeToStr(CurService.AudioStreamType), CurService.ServiceID, CurService.PMTPID, CurService.PCRPID, CurService.VideoPID, CurService.AudioPID,
+                                       VideoTypeToStr(CurService.VideoStreamType), AudioTypeToStr(CurService.AudioStreamType), CurService.ServiceID, CurService.PMTPID, CurService.PCRPID, CurService.VideoPID, CurService.AudioPID2, CurService.AudioTypeFlag, BoolToChar(CurService.AudAutoSelect),
                                        CurService.LCN, BoolToChar(CurService.FlagDelete), BoolToChar(CurService.FlagCAS), BoolToChar(CurService.FlagLock), BoolToChar(CurService.FlagSkip), BoolToChar(CurService.NameLock), CurService.Flags2, StringBuf, CurService.ProviderName) > 0) && ret;
           z++;
         }
@@ -655,7 +655,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           if (strcmp(Name, "FileVersion") == 0)
           {
             FileHeader.FileVersion = Value;
-            if (Value == 1)
+            if (Value <= 2)
               HeaderCheck[0] = TRUE;
             else
               WriteLogMCf(PROGRAM_NAME, "  Incorrect file version %lu.", Value);
@@ -855,32 +855,47 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
         }
 
         //[Services]
-        //# Nr; ServiceName             ; SatIdx; TrpIdx; Tuner; VideoType; AudioType;  SvcID; PMTPID; PCRPID; VidPID; AudPID;   LCN; FDel; FCAS; FLock; FSkip; NameLck; Flags2; Unknown2;           ProviderName
-        //   0; Das Erste               ;      1;     44;     3;     MPEG2;     MPEG1;  28106;    100;    101;    101;  32870;     0;    n;    n;     n;     n;       n;    0x1; 00 00 00 00 DC DD;  ARD
+        //# Nr; ServiceName             ; SatIdx; TrpIdx; Tuner; VideoType; AudioType;  SvcID; PMTPID; PCRPID; VidPID; AudPID; ATyp; AAut;   LCN; FDel; FCAS; FLock; FSkip; NameLck; Flags2;           Unknown2;  ProviderName
+        //   0; Das Erste               ;      1;     44;     3;     MPEG2;     MPEG1;  28106;    100;    101;    101;    102;    0;    y;     0;    n;    n;     n;     n;       n;    0x1;  00 00 00 00 DC DD;  ARD
         case SM_TVServices:
         case SM_RadioServices:
         {
           tFlashService          CurService;
           char                   StringBuf1[10], StringBuf2[10], StringBuf3[20];
-          char                   CharFlagDel, CharFlagCAS, CharFlagLock, CharFlagSkip, CharNameLock;
+          char                   CharAudAuto, CharFlagDel, CharFlagCAS, CharFlagLock, CharFlagSkip, CharNameLock;
+          word                   AudioPID, AudType;
 
           memset(&CurService, 0, sizeof(tFlashService));
           StringBuf1[0] = '\0'; StringBuf2[0] = '\0'; StringBuf3[0] = '\0';
 
-          ret = (sscanf(Buffer, "%*i ; %23[^;\r\n] ; %hhu ; %hu ; %hhu ; "                         // Nr; ServiceName; SatIndex; TransponderIndex; Tuner;
-                                "%8[^;\r\n] ; %8[^;\r\n] ; %hu ; %hu ; %hu ; %hu ; %hu ; "         // VideoStreamType; AudioStreamType; ServiceID; PMTPID; PCRPID; VideoPID; AudioPID;
-                                "%hu ; %c ; %c ; %c ; %c ; %c ; %hi ; %18[^;\r\n] ; %20[^;\r\n]",  // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
-                                  CurService.ServiceName, &CurService.SatIndex, &CurService.TransponderIndex, &CurService.Tuner,
-                                  StringBuf1, StringBuf2, &CurService.ServiceID, &CurService.PMTPID, &CurService.PCRPID, &CurService.VideoPID, &CurService.AudioPID,
-                                  &CurService.LCN, &CharFlagDel, &CharFlagCAS, &CharFlagLock, &CharFlagSkip, &CharNameLock, &CurService.Flags2, StringBuf3, CurService.ProviderName) >= 19) && ret;  // Wenn ProviderName empty -> wird korrekt auf 0xFFFF gesetzt
+          if (FileHeader.FileVersion == 1)
+            ret = (sscanf(Buffer, "%*i ; %23[^;\r\n] ; %hhu ; %hu ; %hhu ; "                             // Nr; ServiceName; SatIndex; TransponderIndex; Tuner;
+                                  "%8[^;\r\n] ; %8[^;\r\n] ; %hu ; %hu ; %hu ; %hu ; %hu ; "             // VideoStreamType; AudioStreamType; ServiceID; PMTPID; PCRPID; VideoPID; AudioPID;
+                                  "%hu ; %c ; %c ; %c ; %c ; %c ; %hi ; %18[^;\r\n] ; %20[^;\r\n]",      // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
+                                    CurService.ServiceName, &CurService.SatIndex, &CurService.TransponderIndex, &CurService.Tuner,
+                                    StringBuf1, StringBuf2, &CurService.ServiceID, &CurService.PMTPID, &CurService.PCRPID, &CurService.VideoPID, &AudioPID,
+                                    &CurService.LCN, &CharFlagDel, &CharFlagCAS, &CharFlagLock, &CharFlagSkip, &CharNameLock, &CurService.Flags2, StringBuf3, CurService.ProviderName) >= 19) && ret;  // Wenn ProviderName empty -> wird korrekt auf 0xFFFF gesetzt
+          else
+            ret = (sscanf(Buffer, "%*i ; %23[^;\r\n] ; %hhu ; %hu ; %hhu ; "                             // Nr; ServiceName; SatIndex; TransponderIndex; Tuner;
+                                  "%8[^;\r\n] ; %8[^;\r\n] ; %hu ; %hu ; %hu ; %hu ; %hu ; %hu ; %c ; "  // VideoStreamType; AudioStreamType; ServiceID; PMTPID; PCRPID; VideoPID; AudioPID; AudioType; AudioAutoSelect;
+                                  "%hu ; %c ; %c ; %c ; %c ; %c ; %hi ; %18[^;\r\n] ; %20[^;\r\n]",      // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
+                                    CurService.ServiceName, &CurService.SatIndex, &CurService.TransponderIndex, &CurService.Tuner,
+                                    StringBuf1, StringBuf2, &CurService.ServiceID, &CurService.PMTPID, &CurService.PCRPID, &CurService.VideoPID, &AudioPID, &AudType, &CharAudAuto,
+                                    &CurService.LCN, &CharFlagDel, &CharFlagCAS, &CharFlagLock, &CharFlagSkip, &CharNameLock, &CurService.Flags2, StringBuf3, CurService.ProviderName) >= 20) && ret;  // Wenn ProviderName empty -> wird korrekt auf 0xFFFF gesetzt
 
           RTrim(CurService.ServiceName);
           if (!CurService.ServiceName[0]) strcpy(CurService.ServiceName, "* No Name *");
           RTrim(CurService.ProviderName);
           CurService.VideoStreamType = StrToVideoType(StringBuf1);
           CurService.AudioStreamType = StrToAudioType(StringBuf2);
+          CurService.AudioPID = AudioPID;
+          if (FileHeader.FileVersion > 1)
+          {
+            CurService.AudioTypeFlag = AudType;       // 0=MPEG1/2, 1=AC3 (Dolby Digital), 2=AAC, 3=unknown
+            CurService.AudAutoSelect = CharToBool(CharAudAuto);
+          }
           CurService.FlagDelete = CharToBool(CharFlagDel);
-          CurService.FlagCAS = CharToBool(CharFlagCAS);
+          CurService.FlagCAS  = CharToBool(CharFlagCAS);
           CurService.FlagLock = CharToBool(CharFlagLock);
           CurService.FlagSkip = CharToBool(CharFlagSkip);
           if (RestoreNameLock)

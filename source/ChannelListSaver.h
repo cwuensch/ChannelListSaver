@@ -4,7 +4,7 @@
 #define TAP_SPrint    snprintf
 
 #define PROGRAM_NAME          "ChannelListSaver"
-#define VERSION               "0.8"
+#define VERSION               "0.9"
 #define TAPID                 0x2A0A0002
 #define AUTHOR                "chris86"
 //#define DESCRIPTION           "Im-/Export of Sat-, Transponder- & Channel-Lists"
@@ -43,10 +43,18 @@ typedef struct
   char FileName[MAX_FILE_NAME_SIZE];
 } tParameters;
 
-typedef struct tProviderName
+typedef struct
 {
   char name[PROVIDERNAMELENGTH];
 } tProviderName;
+
+typedef struct
+{
+  TYPE_TimerInfo        TimerInfo;
+  dword                 Frequency;
+  word                  ServiceID;
+  word                  SETimerID;    // unused5 aus der TYPE_Timer_TMSS wird von SmartEPG genutzt
+} tTimerExt;
 
 typedef struct
 {

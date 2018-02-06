@@ -55,7 +55,7 @@ Text format:
 Warnings:
   * There are ONLY TMS models (eg SRP-2401CI +, CRP-2401, ...) support, NO Smart models !!!
   * Reverse Play is only possible within the same device class (satellite / cable / terrestrial)!
-  * When importing the settings, all timers are cleared.
+  * After importing the settings, the timers should be inspected.
 
 Known Bugs:
   - After a reset the service list (on the pot menu) and then import this by TAP favorites lists are sometimes overwritten from the pot. Column again import fixes the problem.

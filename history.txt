@@ -1,13 +1,20 @@
+v0.9          NEU:
+(2018-02-01)    * ChannelListSaver erhält die eingestellten Timer und passt sie an die neue Senderliste an
+                * AudioPID in der Channels.txt wird korrekt ausgegeben (von Flags separiert)
+                  (-> neues Datenformat v2 für die Channels.txt!!)
+                  (die neue Version kann das alte und neue Format importieren)
+              INTERNALS:
+                - Umstellung auf eigene Load/SaveINI und LoadLangStrings
+
 v0.8          NEU:
 (2016-05-15)    * ChannelListSaver für unbeaufsichtigten Start vorbereitet (jkIT)
               BUGFIXES:
                 - automatische Beendigung trotz TSR-Bug
                 - Favourite-Groups ohne Inhalt (0 Einträge) wurden fehlerhaft importiert
-                - Leerzeichen (0x20) wurde in ConvertUTF8Str() als Codepage-Identifikator gewertet                * Löschen der TV- und Radio-Senderlisten wurde nicht ausgeführt
+                - Leerzeichen (0x20) wurde in ConvertUTF8Str() als Codepage-Identifikator gewertet
                 - FavGroupName ist kein nullterminierter String
               INTERNALS:
                 - Logfile-Ausgabe über fopen, Datei bleibt geöffnet, zeilenweises Buffering
-
 
 v0.7          NEU:
 (2015-10-31)    * ini-Option "RestoreNameLock=1" für Wiederherstellen des NameLock-Flags
