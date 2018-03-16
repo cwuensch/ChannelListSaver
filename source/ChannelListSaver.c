@@ -33,6 +33,17 @@ TAP_AUTHOR_NAME         (AUTHOR);
 TAP_DESCRIPTION         (DESCRIPTION);
 TAP_ETCINFO             (__DATE__);
 
+typedef enum
+{
+  ST_Init,
+  ST_CheckPresentFiles,
+  ST_ImportBinary,
+  ST_ImportText,
+  ST_Export,
+  ST_ShowSuccess,
+  ST_Finished,
+  ST_StillRunning
+} tState;
 
 typedef enum
 {
@@ -94,6 +105,7 @@ size_t                  SIZE_Service_TMSx;
 size_t                  SIZE_Favorites;
 
 //static bool             CSShowMessageBox = FALSE;
+static tState           State = ST_Init;
 static char            *TxtFileName = TXTFILENAME, *DatFileName = DATFILENAME, *StdFileName = STDFILENAME;
 static tTimerExt       *OldTimers = NULL;
 static int              NrOldTimers = 0;
@@ -176,6 +188,8 @@ int TAP_Main(void)
   dword CurUnixTime = TF2UnixTime(CurTime) + Sec;
   WriteLogMCf("DEBUG", "Current time: TF2UnixTime=%u, %s", CurUnixTime, ctime((time_t*) &CurUnixTime)); */
 
+  State = ST_Init;
+
   TRACEEXIT();
   return 1;
 }
@@ -186,7 +200,6 @@ int TAP_Main(void)
 // ----------------------------------------------------------------------------
 dword TAP_EventHandler(word event, dword param1, dword param2)
 {
-  static bool           CLSFinished = FALSE;
   static bool           DoNotReenter = FALSE;
   static char           TempStr[512], *pMessage = NULL;
   static bool           ret = TRUE;
@@ -213,78 +226,91 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
 //     CSShowMessageBox = FALSE;
 //  }
 
-  // OSDs und TAP-Beendigung dürfen nicht im selben Durchlauf erfolgen, wie HDD_ImExportChData()!
-  if (event == EVT_IDLE && CLSFinished && !DoNotReenter)
-  {
-    DoNotReenter = TRUE;
-    if (pMessage)
-      ShowErrorMessage(pMessage, NULL);
-
-//    if (SysSubState != 0)
-//      TAP_EnterNormalNoInfo();
-
-    if (CLSFinished == 1)
-      WriteLogMC(PROGRAM_NAME, "ChannelListSaver Exit.\r\n");
-    else
-      WriteLogMC(PROGRAM_NAME, "TAP is still running!! (should not occur)");
-    CloseLogMC();
-    LangUnloadStrings();
-    CLSFinished++;
-    DoNotReenter = FALSE;
-    TAP_Exit();
-  }
-
-  // Main-Funktion
-  else if (event == EVT_IDLE && !DoNotReenter)
+  if (event == EVT_IDLE && !DoNotReenter)
   {
     tParameters*        StartParameter = NULL;
     int                 Answer = 2;
 
     DoNotReenter = TRUE;
 
-//    TAP_GetState(&SysState, &SysSubState);
-//    if(SysSubState != 0) TAP_ExitNormal();
-
-    TAP_Hdd_ChangeDir(LOGDIR);
-    LoadINI();
-    WriteLogMCf(PROGRAM_NAME, "Settings: ImportFormat=%d, OverwriteSatellites=%d", ImportFormat, OverwriteSatellites);
-
-    // auf Start-Parameter prüfen
-    StartParameter = (tParameters*) HDD_TAP_GetStartParameter();
-    if (StartParameter)
+    switch (State)
     {
-      WriteLogMCf(PROGRAM_NAME, "StartParameters: %s, ImportFormat=%hhu, silent=%hhu, FileName=%s", (StartParameter->ImExport ? "Import" : "Export"), StartParameter->ImportFormat, StartParameter->SilentMode, StartParameter->FileName);
-      ImportFormat = StartParameter->ImportFormat;
-      SilentMode = StartParameter->SilentMode;
-      if (SilentMode)
-        Answer = (2 - StartParameter->ImExport);
-      if (StartParameter->FileName && *StartParameter->FileName)
-        switch (StartParameter->ImportFormat)
-        {
-          case 0: DatFileName = StartParameter->FileName; break;
-          case 1: TxtFileName = StartParameter->FileName; break;
-          case 2: StdFileName = StartParameter->FileName; break;
-        }
-    }
-
-    if (TAP_Hdd_Exist(StdFileName) && (ImportFormat == 2 || (!StartParameter && !TAP_Hdd_Exist(DatFileName) && !TAP_Hdd_Exist(TxtFileName))))
-    {
-      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_System), StdFileName);
-      if (!SilentMode) Answer = ShowConfirmationDialog(TempStr);
-      if (Answer == 1)
-        ret = HDD_ImExportChData(StdFileName, TAPFSROOT LOGDIR, TRUE);
-    }
-
-    else if (TAP_Hdd_Exist(TxtFileName) && (ImportFormat == 1 || (!StartParameter && !TAP_Hdd_Exist(DatFileName))))
-    {
-      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_Text), TxtFileName);
-      if (!SilentMode) Answer = ShowConfirmationDialog(TempStr);
-      if (Answer == 1)
+      case ST_Init:
       {
-//        WriteLogMC(PROGRAM_NAME, "[Aktion] Importiere '" EXPORTFILENAME ".txt' (Text)...");
-        #ifdef FULLDEBUG
-          HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
-        #endif
+//        TAP_GetState(&SysState, &SysSubState);
+//        if(SysSubState != 0) TAP_ExitNormal();
+
+        TAP_Hdd_ChangeDir(LOGDIR);
+        LoadINI();
+        WriteLogMCf(PROGRAM_NAME, "Settings: ImportFormat=%d, OverwriteSatellites=%d", ImportFormat, OverwriteSatellites);
+
+        // auf Start-Parameter prüfen
+        StartParameter = (tParameters*) HDD_TAP_GetStartParameter();
+        if (StartParameter)
+        {
+          WriteLogMCf(PROGRAM_NAME, "StartParameters: %s, ImportFormat=%hhu, silent=%hhu, FileName=%s", (StartParameter->ImExport ? "Import" : "Export"), StartParameter->ImportFormat, StartParameter->SilentMode, StartParameter->FileName);
+          ImportFormat = StartParameter->ImportFormat;
+          SilentMode = StartParameter->SilentMode;
+          if (SilentMode)
+            Answer = (2 - StartParameter->ImExport);
+          if (StartParameter->FileName && *StartParameter->FileName)
+            switch (StartParameter->ImportFormat)
+            {
+              case 0: DatFileName = StartParameter->FileName; break;
+              case 1: TxtFileName = StartParameter->FileName; break;
+              case 2: StdFileName = StartParameter->FileName; break;
+            }
+        }
+        State = ST_CheckPresentFiles;
+        break;
+      }
+    
+      case ST_CheckPresentFiles:
+      {
+        if (TAP_Hdd_Exist(StdFileName) && (ImportFormat == 2 || (!StartParameter && !TAP_Hdd_Exist(DatFileName) && !TAP_Hdd_Exist(TxtFileName))))
+        {
+          TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_System), StdFileName);
+          if (!SilentMode) Answer = ShowConfirmationDialog(TempStr);
+          if (Answer == 1)
+            ret = HDD_ImExportChData(StdFileName, TAPFSROOT LOGDIR, TRUE);
+          State = ST_ShowSuccess;
+        }
+
+        else if (TAP_Hdd_Exist(TxtFileName) && (ImportFormat == 1 || (!StartParameter && !TAP_Hdd_Exist(DatFileName))))
+        {
+          TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_Text), TxtFileName);
+          if (!SilentMode) Answer = ShowConfirmationDialog(TempStr);
+          if (Answer == 1)
+          {
+            #ifdef FULLDEBUG
+              HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
+            #endif
+            State = ST_ImportText;
+          }
+        }
+
+        else if(TAP_Hdd_Exist(DatFileName) && (ImportFormat == 0 || !StartParameter))
+        {
+          TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_Binary), DatFileName);
+          if (!SilentMode) Answer = ShowConfirmationDialog(TempStr);
+          if (Answer == 1)
+          {
+            #ifdef FULLDEBUG
+              HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
+            #endif
+            State = ST_ImportBinary;
+          }
+        }
+
+        if (Answer == 2)
+          State = ST_Export;
+        else if (State == ST_CheckPresentFiles)
+          State = ST_Finished;
+        break;
+      }
+
+      case ST_ImportText:
+      {
         OldTimers = SaveTimers(&NrOldTimers);
         ret = ImportSettings_Text(TxtFileName, TAPFSROOT LOGDIR, OverwriteSatellites, RestoreNameLock);
         if (OldTimers)
@@ -306,19 +332,12 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
           else
             pMessage = LangGetString(LS_ImportError);
         }
+        State = ST_ShowSuccess;
+        break;
       }
-    }
 
-    else if(TAP_Hdd_Exist(DatFileName) && (ImportFormat == 0 || !StartParameter))
-    {
-      TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_Binary), DatFileName);
-      if (!SilentMode) Answer = ShowConfirmationDialog(TempStr);
-      if (Answer == 1)
+      case ST_ImportBinary:
       {
-//        WriteLogMC(PROGRAM_NAME, "[Aktion] Importiere '" EXPORTFILENAME ".dat' (binär)...");
-        #ifdef FULLDEBUG
-          HDD_ImExportChData("Settings_vor.std", TAPFSROOT LOGDIR, FALSE);
-        #endif
         OldTimers = SaveTimers(&NrOldTimers);
         ret = ImportSettings(DatFileName, TAPFSROOT LOGDIR, OverwriteSatellites, RestoreNameLock);
         if (OldTimers)
@@ -340,27 +359,57 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
           else
             pMessage = LangGetString(LS_ImportError);
         }
+        State = ST_ShowSuccess;
+        break;
+      }
+
+      case ST_Export:
+      {
+        WriteLogMC(PROGRAM_NAME, "[Action] Exporting settings...");
+        ret = TRUE;
+        if (!StartParameter || ImportFormat == 0)
+          ret = ExportSettings(DatFileName,      TAPFSROOT LOGDIR) && ret;
+        if (!StartParameter || ImportFormat == 1)
+          ret = ExportSettings_Text(TxtFileName, TAPFSROOT LOGDIR) && ret;
+        if (!StartParameter || ImportFormat == 2)
+          ret =(HDD_ImExportChData(StdFileName,  TAPFSROOT LOGDIR, FALSE) || ((void*)FIS_fwAppl_ExportChData() == NULL)) && ret;
+        if (!ret && !SilentMode)
+          pMessage = LangGetString(LS_ExportError);
+        State = ST_ShowSuccess;
+        break;
+      }
+
+      case ST_ShowSuccess:
+      {
+        if (pMessage)
+          ShowErrorMessage(pMessage, NULL);
+        State = ST_Finished;
+        break;
+      }
+
+      case ST_Finished:
+      {
+        if (StartParameter)
+          StartParameter->ResultCode = ret;
+
+//        if (SysSubState != 0)
+//          TAP_EnterNormalNoInfo();
+
+        WriteLogMC(PROGRAM_NAME, "ChannelListSaver Exit.\r\n");
+        CloseLogMC();
+        LangUnloadStrings();
+        State = ST_StillRunning;
+        TAP_Exit();
+        break;
+      }
+
+      case ST_StillRunning:
+      {
+        WriteLogMC(PROGRAM_NAME, "TAP is still running!! (should not occur)");
+        CloseLogMC();
+        TAP_Exit();
       }
     }
-
-    if (Answer == 2)
-    {
-      WriteLogMC(PROGRAM_NAME, "[Action] Exporting settings...");
-      ret = TRUE;
-      if (!StartParameter || ImportFormat == 0)
-        ret = ExportSettings(DatFileName,      TAPFSROOT LOGDIR) && ret;
-      if (!StartParameter || ImportFormat == 1)
-        ret = ExportSettings_Text(TxtFileName, TAPFSROOT LOGDIR) && ret;
-      if (!StartParameter || ImportFormat == 2)
-        ret =(HDD_ImExportChData(StdFileName,  TAPFSROOT LOGDIR, FALSE) || ((void*)FIS_fwAppl_ExportChData() == NULL)) && ret;
-      if (!ret && !SilentMode)
-        pMessage = LangGetString(LS_ExportError);
-    }
-
-    if (StartParameter)
-      StartParameter->ResultCode = ret;
-
-    CLSFinished = 1;
     DoNotReenter = FALSE;
   }
 
