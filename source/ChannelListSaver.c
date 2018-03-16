@@ -101,8 +101,6 @@ static int              ImportFormat = 0;  // 0 - Binary, 1 - Text, 2 - System
 static int              OverwriteSatellites = 1;  // 0 - nie, 1 - auto, 2 - immer
 static bool             RestoreNameLock = FALSE;
 static bool             SilentMode = FALSE;
-static bool             CLSFinished = FALSE;
-static char             TempStr[512], *pMessage = NULL;
 
 #define minmax(v,d,a,b)  ( ( ((v) < (a)) || ((v) > (b)) ) ? (d) : (v) )
 
@@ -112,10 +110,6 @@ static char             TempStr[512], *pMessage = NULL;
 // ============================================================================
 int TAP_Main(void)
 {
-  tParameters*          StartParameter = NULL;
-  int                   Answer = 2;
-  bool                  ret = TRUE;
-
   #if STACKTRACE == TRUE
     CallTraceInit();
     CallTraceEnable(TRUE);
@@ -127,8 +121,6 @@ int TAP_Main(void)
   WriteLogMC (PROGRAM_NAME, "=======================================================");
   WriteLogMCf(PROGRAM_NAME, "Receiver Model: %s (%u), System Type: TMS-%c (%d)", GetToppyString(GetSysID()), GetSysID(), SysTypeToStr(), GetSystemType());
   WriteLogMCf(PROGRAM_NAME, "Firmware: %s", GetApplVer());
-
-//  TAP_EnterNormalNoInfo();
 
   // Load Language Strings
   if (TAP_GetSystemVar(SYSVAR_OsdLan) != LAN_German)
@@ -147,6 +139,21 @@ int TAP_Main(void)
       TRACEEXIT();
       return 0;  */
     }
+
+  // Check FirmwareTMS.dat and SystemType
+  if(!InitSystemType())
+  {
+    WriteLogMC(PROGRAM_NAME, "Unknown SystemType. Please check FirmwareTMS.dat!\r\n");
+    OSDMenuInfoBoxShow(PROGRAM_NAME " " VERSION, LangGetString(LS_UnknownSystemType), 500);
+    do
+    {
+      OSDMenuEvent(NULL, NULL, NULL);
+    } while(OSDMenuInfoBoxIsVisible());
+
+    CloseLogMC();
+    TRACEEXIT();
+    return 0;
+  }
 
   // DEBUG-AUSGABEN
   if ((void*)FIS_fwAppl_ExportChData() == NULL)
@@ -169,10 +176,75 @@ int TAP_Main(void)
   dword CurUnixTime = TF2UnixTime(CurTime) + Sec;
   WriteLogMCf("DEBUG", "Current time: TF2UnixTime=%u, %s", CurUnixTime, ctime((time_t*) &CurUnixTime)); */
 
+  TRACEEXIT();
+  return 1;
+}
+
+
+// ----------------------------------------------------------------------------
+//                            TAP EventHandler
+// ----------------------------------------------------------------------------
+dword TAP_EventHandler(word event, dword param1, dword param2)
+{
+  static bool           CLSFinished = FALSE;
+  static bool           DoNotReenter = FALSE;
+  static char           TempStr[512], *pMessage = NULL;
+  static bool           ret = TRUE;
+//  static dword          SysState, SysSubState;
+
+  TRACEENTER();
+
+  // Behandlung offener MessageBoxen (rekursiver Aufruf, auch bei DoNotReenter)
+//  if(CSShowMessageBox)
+//  {
+    if(OSDMenuMessageBoxIsVisible() || OSDMenuInfoBoxIsVisible())
+    {
+      if(OSDMenuMessageBoxIsVisible())
+      {
+//        if(event == EVT_KEY) LastMessageBoxKey = param1;
+        #ifdef __ALTEFBLIB__
+          OSDMenuMessageBoxDoScrollOver(&event, &param1);
+        #endif
+      }
+      OSDMenuEvent(&event, &param1, &param2);
+      param1 = 0;
+    }
+//    if(!OSDMenuMessageBoxIsVisible() && !OSDMenuInfoBoxIsVisible())
+//     CSShowMessageBox = FALSE;
+//  }
+
+  // OSDs und TAP-Beendigung dürfen nicht im selben Durchlauf erfolgen, wie HDD_ImExportChData()!
+  if (event == EVT_IDLE && CLSFinished && !DoNotReenter)
+  {
+    DoNotReenter = TRUE;
+    if (pMessage)
+      ShowErrorMessage(pMessage, NULL);
+
+//    if (SysSubState != 0)
+//      TAP_EnterNormalNoInfo();
+
+    if (CLSFinished == 1)
+      WriteLogMC(PROGRAM_NAME, "ChannelListSaver Exit.\r\n");
+    else
+      WriteLogMC(PROGRAM_NAME, "TAP is still running!! (should not occur)");
+    CloseLogMC();
+    LangUnloadStrings();
+    CLSFinished++;
+    DoNotReenter = FALSE;
+    TAP_Exit();
+  }
 
   // Main-Funktion
-  if (InitSystemType())
+  else if (event == EVT_IDLE && !DoNotReenter)
   {
+    tParameters*        StartParameter = NULL;
+    int                 Answer = 2;
+
+    DoNotReenter = TRUE;
+
+//    TAP_GetState(&SysState, &SysSubState);
+//    if(SysSubState != 0) TAP_ExitNormal();
+
     TAP_Hdd_ChangeDir(LOGDIR);
     LoadINI();
     WriteLogMCf(PROGRAM_NAME, "Settings: ImportFormat=%d, OverwriteSatellites=%d", ImportFormat, OverwriteSatellites);
@@ -287,65 +359,9 @@ int TAP_Main(void)
 
     if (StartParameter)
       StartParameter->ResultCode = ret;
-  }
-  else
-  {
-    WriteLogMC(PROGRAM_NAME, "Unknown SystemType. Please check FirmwareTMS.dat!\r\n");
-    pMessage = LangGetString(LS_UnknownSystemType);
-  }
-  CLSFinished = 1;
 
-  TRACEEXIT();
-  return 1;
-}
-
-
-dword TAP_EventHandler(word event, dword param1, dword param2)
-{
-  TRACEENTER();
-  static bool           DoNotReenter = FALSE;
-//  static dword          SysState, SysSubState;
-
-  TRACEENTER();
-
-  // Behandlung offener MessageBoxen (rekursiver Aufruf, auch bei DoNotReenter)
-//  if(CSShowMessageBox)
-//  {
-    if(OSDMenuMessageBoxIsVisible() || OSDMenuInfoBoxIsVisible())
-    {
-      if(OSDMenuMessageBoxIsVisible())
-      {
-//        if(event == EVT_KEY) LastMessageBoxKey = param1;
-        #ifdef __ALTEFBLIB__
-          OSDMenuMessageBoxDoScrollOver(&event, &param1);
-        #endif
-      }
-      OSDMenuEvent(&event, &param1, &param2);
-      param1 = 0;
-    }
-//    if(!OSDMenuMessageBoxIsVisible() && !OSDMenuInfoBoxIsVisible())
-//     CSShowMessageBox = FALSE;
-//  }
-
-  // OSDs und TAP-Beendigung dürfen nicht im selben Durchlauf erfolgen, wie HDD_ImExportChData()!
-  if (event == EVT_IDLE && CLSFinished && !DoNotReenter)
-  {
-    DoNotReenter = TRUE;
-    if (pMessage)
-      ShowErrorMessage(pMessage, NULL);
-
-//    if (SysSubState != 0)
-//      TAP_EnterNormalNoInfo();
-
-    if (CLSFinished == 1)
-      WriteLogMC(PROGRAM_NAME, "ChannelListSaver Exit.\r\n");
-    else
-      WriteLogMC(PROGRAM_NAME, "TAP is still running!! (should not occur)");
-    CloseLogMC();
-    LangUnloadStrings();
-    CLSFinished++;
+    CLSFinished = 1;
     DoNotReenter = FALSE;
-    TAP_Exit();
   }
 
   TRACEEXIT();
