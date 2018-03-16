@@ -556,7 +556,7 @@ bool HDD_SetFileDateTime(char const *FileName, char const *AbsDirectory, dword N
 
   if(FileName && AbsDirectory && (NewDateTime > 0xd0790000))
   {
-    TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
+    snprintf(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
     if(lstat64(AbsFileName, &statbuf) == 0)
     {
       utimebuf.actime = statbuf.st_atime;
@@ -573,33 +573,43 @@ bool HDD_SetFileDateTime(char const *FileName, char const *AbsDirectory, dword N
 bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
 {
 //  static char           AbsDir2[FBLIB_DIR_SIZE];
-  static tDirEntry     *_hddTapFolder = NULL;
+  tDirEntry            *_hddTapFolder = NULL;
   tDirEntry             FolderStruct, OldTapFolder;
+  dword                *_CurTapTask = NULL;
+  dword                 OldTapTask;
   char                  AbsFileName[FBLIB_DIR_SIZE];
 //  char                 *RelFileName = NULL;
   bool                  ret = FALSE;
 
   TRACEENTER();
-  HDD_TAP_PushDir();
+//  HDD_TAP_PushDir();
   WriteLogMCf(PROGRAM_NAME, (Import ? "[Action] Importing '%s' (System)..." : "[Action] Exporting '%s' (System)..."), FileName);
   WriteLogMC(PROGRAM_NAME, "----------------------------------------");
 
-  TAP_SPrint(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
+  snprintf(AbsFileName, sizeof(AbsFileName), "%s/%s", AbsDirectory, FileName);
 //  RelFileName = &AbsFileName[21];
 
   // Create/empty the file, if not exists
   if(!Import)
     fclose(fopen(AbsFileName, "w"));
-  
+
+
+  //Save the current TAP index value (value gets corrupted by Firmware function)
+  _CurTapTask = (dword*)FIS_vCurTapTask();
+  if (_CurTapTask)
+    OldTapTask = *_CurTapTask;
+  else
+  {
+    TRACEEXIT();
+    return FALSE;
+  }
+
   //Get the current TAP folder variable
+  _hddTapFolder = (tDirEntry*)FIS_vHddTapFolder();
   if(!_hddTapFolder)
   {
-    _hddTapFolder = (tDirEntry*)FIS_vHddTapFolder();
-    if(!_hddTapFolder)
-    {
-      TRACEEXIT();
-      return FALSE;
-    }
+    TRACEEXIT();
+    return FALSE;
   }
 
   //Initialize the directory structure
@@ -619,6 +629,7 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
     else
       ret = Appl_ExportChData(FileName);
     memcpy((void*)_hddTapFolder, &OldTapFolder, sizeof(OldTapFolder));
+    *_CurTapTask = OldTapTask;  // Restore current TAP index (will be corrupted by Firmware function)
   }
   ApplHdd_RestoreWorkFolder();
 
@@ -634,7 +645,7 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
       remove(AbsFileName);
     WriteLogMCf(PROGRAM_NAME, (Import ? "--> Error during import '%s'!" : "--> Error during export '%s'!"), FileName);
   }
-  HDD_TAP_PopDir();
+//  HDD_TAP_PopDir();
 
   TRACEEXIT();
   return ret;
