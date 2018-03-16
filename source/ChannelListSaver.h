@@ -4,7 +4,7 @@
 #define TAP_SPrint    snprintf
 
 #define PROGRAM_NAME          "ChannelListSaver"
-#define VERSION               "0.9"
+#define VERSION               "1.0 beta"
 #define TAPID                 0x2A0A0002
 #define AUTHOR                "chris86"
 //#define DESCRIPTION           "Im-/Export of Sat-, Transponder- & Channel-Lists"
@@ -61,7 +61,9 @@ typedef struct
   char                  Magic[6];     // TFchan
   short                 FileVersion;  // 1
   SYSTEM_TYPE           SystemType;
-  bool                  UTF8System;
+  byte                  UTF8System;
+  byte                  PilotData;
+  byte                  Reserved[2];
   unsigned long         FileSize;
 
   int                   SatellitesOffset;

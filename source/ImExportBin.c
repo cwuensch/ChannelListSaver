@@ -67,6 +67,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
     FileHeader.FileVersion = 1;
     FileHeader.SystemType = GetSystemType();
     FileHeader.UTF8System = isUTFToppy();
+    FileHeader.PilotData = (GetSysID() == 22010);  // nur beim TMS2100
 
     // Now write the data blocks to the file
     ret = fwrite(&FileHeader, sizeof(tExportHeader), 1, fExportFile) && ret;
@@ -355,6 +356,17 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
             }
             else
               ret = FALSE;
+
+            // Wenn Fremddatei auf TMS2100 eingespielt wird, dann Pilot-Settings überschreiben
+            if ((CurSystemType == ST_TMSS) && (GetSysID() == 22010) && !FileHeader.PilotData)
+            {
+              dword i;
+              for (i = 0; i < *NrTransponders; i++)
+              {
+                if ((p[i].ModulationType==MODULATION_8PSK) /*&& (p[i].FECMode==FEC_AUTO || p[i].FECMode==FEC_2_3 || p[i].FECMode==FEC_3_4 || p[i].FECMode==FEC_3_5)*/)
+                  p[i].Pilot = 1;
+              }
+            }
             WriteLogMCf(PROGRAM_NAME, (ret) ? "%5d / %-5d Transponders imported." : "  Transponders error (%d / %d)!", NrImpTransponders, FileHeader.NrTransponders);
           }
 

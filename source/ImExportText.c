@@ -324,6 +324,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
     ret = (fprintf(fExportFile, "NrOfLines=%010d" CRLF, 0)               > 0) && ret;
     ret = (fprintf(fExportFile, "SystemType=%d" CRLF,   GetSystemType()) > 0) && ret;
     ret = (fprintf(fExportFile, "UTF8System=%d" CRLF,   isUTFToppy())    > 0) && ret;
+    ret = (fprintf(fExportFile, "PilotData=%d" CRLF, (GetSysID()==22010)) > 0) && ret;
 
     memset(&FileHeader, 0, sizeof(FileHeader));
     FileHeader.NrSatellites = FlashSatTablesGetTotal();
@@ -543,6 +544,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
   FILE                 *fImportFile = NULL;
   char                  AbsFileName[FBLIB_DIR_SIZE];
   unsigned long         fs;
+  const word            CurSystemID = GetSysID();
   tScanMode             CurMode = SM_Start;
   bool                  HeaderCheck[3];
   int                   NrOfLines = 0;
@@ -564,6 +566,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
   {
     ret = TRUE;
     memset(&FileHeader, 0, sizeof(FileHeader));
+    FileHeader.PilotData = 1;
 
     // Dateigröße bestimmen
     fseek(fImportFile, 0, SEEK_END);
@@ -680,6 +683,8 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
             NrOfLines = Value;
           else if (strcmp(Name, "UTF8System") == 0)
             FileHeader.UTF8System = Value;
+          else if (strcmp(Name, "PilotData") == 0)
+            FileHeader.PilotData = Value;
           else if (strcmp(Name, "NrSatellites") == 0)
             FileHeader.NrSatellites = Value;
           else if (strcmp(Name, "NrTransponders") == 0)
@@ -836,6 +841,9 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           CurTransponder.Pilot      = CharToBool(CharPilot);
           CurTransponder.FEC        = StrToFEC(StringBuf1);
           CurTransponder.Modulation = StrToModulation(StringBuf2);
+          if ((CurSystemID == 22010) && !FileHeader.PilotData)
+            if ((CurTransponder.Modulation==MODULATION_8PSK) /*&& (CurTransponder.FEC==FEC_AUTO || CurTransponder.FEC==FEC_2_3 || CurTransponder.FEC==FEC_3_4 || CurTransponder.FEC==FEC_3_5)*/)
+              CurTransponder.Pilot = TRUE;
           if (strncmp(StringBuf3, "DVBS2", 5) == 0)
             CurTransponder.ModSystem = 1;
           if (CharPolarisation == 'H')

@@ -102,6 +102,7 @@ static int              OverwriteSatellites = 1;  // 0 - nie, 1 - auto, 2 - imme
 static bool             RestoreNameLock = FALSE;
 static bool             SilentMode = FALSE;
 static bool             CLSFinished = FALSE;
+static char             TempStr[512], *pMessage = NULL;
 
 #define minmax(v,d,a,b)  ( ( ((v) < (a)) || ((v) > (b)) ) ? (d) : (v) )
 
@@ -112,7 +113,6 @@ static bool             CLSFinished = FALSE;
 int TAP_Main(void)
 {
   tParameters*          StartParameter = NULL;
-  char                  TempStr[512];
   int                   Answer = 2;
   bool                  ret = TRUE;
 
@@ -229,10 +229,10 @@ int TAP_Main(void)
           if (ret)
           {
             TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportSuccess), LangGetString(LS_Text));
-            ShowErrorMessage(TempStr, NULL);
+            pMessage = TempStr;
           }
           else
-            ShowErrorMessage(LangGetString(LS_ImportError), NULL);
+            pMessage = LangGetString(LS_ImportError);
         }
       }
     }
@@ -263,10 +263,10 @@ int TAP_Main(void)
           if (ret)
           {
             TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportSuccess), LangGetString(LS_Binary));
-            ShowErrorMessage(TempStr, NULL);
+            pMessage = TempStr;
           }
           else
-            ShowErrorMessage(LangGetString(LS_ImportError), NULL);
+            pMessage = LangGetString(LS_ImportError);
         }
       }
     }
@@ -282,34 +282,31 @@ int TAP_Main(void)
       if (!StartParameter || ImportFormat == 2)
         ret =(HDD_ImExportChData(StdFileName,  TAPFSROOT LOGDIR, FALSE) || ((void*)FIS_fwAppl_ExportChData() == NULL)) && ret;
       if (!ret && !SilentMode)
-        ShowErrorMessage(LangGetString(LS_ExportError), NULL);
+        pMessage = LangGetString(LS_ExportError);
     }
 
     if (StartParameter)
       StartParameter->ResultCode = ret;
   }
   else
-    ShowErrorMessage(LangGetString(LS_UnknownSystemType), NULL);
+  {
+    WriteLogMC(PROGRAM_NAME, "Unknown SystemType. Please check FirmwareTMS.dat!\r\n");
+    pMessage = LangGetString(LS_UnknownSystemType);
+  }
+  CLSFinished = 1;
 
-  LangUnloadStrings();
-  WriteLogMC(PROGRAM_NAME, "ChannelListSaver Exit.\r\n");
-  CloseLogMC();
-  CLSFinished = TRUE;
   TRACEEXIT();
-  return 0;
+  return 1;
 }
 
 
 dword TAP_EventHandler(word event, dword param1, dword param2)
 {
-//  TRACEENTER();
-  // TAP-Beendigung erzwingen, falls fertig und in TSR-Modus gewechselt
-  if (event == EVT_IDLE && CLSFinished)
-  {
-    WriteLogMC(PROGRAM_NAME, "Exiting from TSR-mode (should not occur).\r\n");
-    CloseLogMC();
-    TAP_Exit();
-  }
+  TRACEENTER();
+  static bool           DoNotReenter = FALSE;
+//  static dword          SysState, SysSubState;
+
+  TRACEENTER();
 
   // Behandlung offener MessageBoxen (rekursiver Aufruf, auch bei DoNotReenter)
 //  if(CSShowMessageBox)
@@ -330,7 +327,28 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
 //     CSShowMessageBox = FALSE;
 //  }
 
-//  TRACEEXIT();
+  // OSDs und TAP-Beendigung dürfen nicht im selben Durchlauf erfolgen, wie HDD_ImExportChData()!
+  if (event == EVT_IDLE && CLSFinished && !DoNotReenter)
+  {
+    DoNotReenter = TRUE;
+    if (pMessage)
+      ShowErrorMessage(pMessage, NULL);
+
+//    if (SysSubState != 0)
+//      TAP_EnterNormalNoInfo();
+
+    if (CLSFinished == 1)
+      WriteLogMC(PROGRAM_NAME, "ChannelListSaver Exit.\r\n");
+    else
+      WriteLogMC(PROGRAM_NAME, "TAP is still running!! (should not occur)");
+    CloseLogMC();
+    LangUnloadStrings();
+    CLSFinished++;
+    DoNotReenter = FALSE;
+    TAP_Exit();
+  }
+
+  TRACEEXIT();
   return param1;
 }
 
@@ -557,7 +575,7 @@ bool HDD_ImExportChData(char *FileName, char *AbsDirectory, bool Import)
   return ret;
 }
 
-void DebugServiceNames(char* FileName)
+/*void DebugServiceNames(char* FileName)
 {
   FILE *fOut = NULL;
   char fn[512];
@@ -573,7 +591,7 @@ void DebugServiceNames(char* FileName)
     fclose(fOut);
   }
   TRACEEXIT();
-}
+}*/
 
 
 // ----------------------------------------------------------------------------
