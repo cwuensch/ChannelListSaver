@@ -106,9 +106,9 @@ size_t                  SIZE_Favorites;
 
 //static bool             CSShowMessageBox = FALSE;
 static tState           State = ST_Init;
+static tParameters      StartParameter;
+static bool             HasStartParams = FALSE;
 static char            *TxtFileName = TXTFILENAME, *DatFileName = DATFILENAME, *StdFileName = STDFILENAME;
-static tTimerExt       *OldTimers = NULL;
-static int              NrOldTimers = 0;
 static int              ImportFormat = 0;  // 0 - Binary, 1 - Text, 2 - System
 static int              OverwriteSatellites = 1;  // 0 - nie, 1 - auto, 2 - immer
 static bool             RestoreNameLock = FALSE;
@@ -122,6 +122,8 @@ static bool             SilentMode = FALSE;
 // ============================================================================
 int TAP_Main(void)
 {
+  tParameters *pStartParameter;
+
   #if STACKTRACE == TRUE
     CallTraceInit();
     CallTraceEnable(TRUE);
@@ -188,6 +190,12 @@ int TAP_Main(void)
   dword CurUnixTime = TF2UnixTime(CurTime) + Sec;
   WriteLogMCf("DEBUG", "Current time: TF2UnixTime=%u, %s", CurUnixTime, ctime((time_t*) &CurUnixTime)); */
 
+  pStartParameter = (tParameters*) HDD_TAP_GetStartParameter();
+  if (pStartParameter)
+  {
+    StartParameter = *pStartParameter;
+    HasStartParams = TRUE;
+  }
   State = ST_Init;
 
   TRACEEXIT();
@@ -202,6 +210,7 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
 {
   static bool           DoNotReenter = FALSE;
   static char           TempStr[512], *pMessage = NULL;
+  static int            Answer = 2;
   static bool           ret = TRUE;
 //  static dword          SysState, SysSubState;
 
@@ -228,9 +237,6 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
 
   if (event == EVT_IDLE && !DoNotReenter)
   {
-    tParameters*        StartParameter = NULL;
-    int                 Answer = 2;
-
     DoNotReenter = TRUE;
 
     switch (State)
@@ -245,20 +251,19 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
         WriteLogMCf(PROGRAM_NAME, "Settings: ImportFormat=%d, OverwriteSatellites=%d", ImportFormat, OverwriteSatellites);
 
         // auf Start-Parameter prüfen
-        StartParameter = (tParameters*) HDD_TAP_GetStartParameter();
-        if (StartParameter)
+        if (HasStartParams)
         {
-          WriteLogMCf(PROGRAM_NAME, "StartParameters: %s, ImportFormat=%hhu, silent=%hhu, FileName=%s", (StartParameter->ImExport ? "Import" : "Export"), StartParameter->ImportFormat, StartParameter->SilentMode, StartParameter->FileName);
-          ImportFormat = StartParameter->ImportFormat;
-          SilentMode = StartParameter->SilentMode;
+          WriteLogMCf(PROGRAM_NAME, "StartParameters: %s, ImportFormat=%hhu, silent=%hhu, FileName=%s", (StartParameter.ImExport ? "Import" : "Export"), StartParameter.ImportFormat, StartParameter.SilentMode, StartParameter.FileName);
+          ImportFormat = StartParameter.ImportFormat;
+          SilentMode = StartParameter.SilentMode;
           if (SilentMode)
-            Answer = (2 - StartParameter->ImExport);
-          if (StartParameter->FileName && *StartParameter->FileName)
-            switch (StartParameter->ImportFormat)
+            Answer = (2 - StartParameter.ImExport);
+          if (StartParameter.FileName && *StartParameter.FileName)
+            switch (StartParameter.ImportFormat)
             {
-              case 0: DatFileName = StartParameter->FileName; break;
-              case 1: TxtFileName = StartParameter->FileName; break;
-              case 2: StdFileName = StartParameter->FileName; break;
+              case 0: DatFileName = StartParameter.FileName; break;
+              case 1: TxtFileName = StartParameter.FileName; break;
+              case 2: StdFileName = StartParameter.FileName; break;
             }
         }
         State = ST_CheckPresentFiles;
@@ -267,7 +272,7 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
     
       case ST_CheckPresentFiles:
       {
-        if (TAP_Hdd_Exist(StdFileName) && (ImportFormat == 2 || (!StartParameter && !TAP_Hdd_Exist(DatFileName) && !TAP_Hdd_Exist(TxtFileName))))
+        if (TAP_Hdd_Exist(StdFileName) && (ImportFormat == 2 || (!HasStartParams && !TAP_Hdd_Exist(DatFileName) && !TAP_Hdd_Exist(TxtFileName))))
         {
           TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_System), StdFileName);
           if (!SilentMode) Answer = ShowConfirmationDialog(TempStr);
@@ -276,7 +281,7 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
           State = ST_ShowSuccess;
         }
 
-        else if (TAP_Hdd_Exist(TxtFileName) && (ImportFormat == 1 || (!StartParameter && !TAP_Hdd_Exist(DatFileName))))
+        else if (TAP_Hdd_Exist(TxtFileName) && (ImportFormat == 1 || (!HasStartParams && !TAP_Hdd_Exist(DatFileName))))
         {
           TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_Text), TxtFileName);
           if (!SilentMode) Answer = ShowConfirmationDialog(TempStr);
@@ -289,7 +294,7 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
           }
         }
 
-        else if(TAP_Hdd_Exist(DatFileName) && (ImportFormat == 0 || !StartParameter))
+        else if(TAP_Hdd_Exist(DatFileName) && (ImportFormat == 0 || !HasStartParams))
         {
           TAP_SPrint(TempStr, sizeof(TempStr), LangGetString(LS_ImportQuestion), LangGetString(LS_Binary), DatFileName);
           if (!SilentMode) Answer = ShowConfirmationDialog(TempStr);
@@ -311,7 +316,8 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
 
       case ST_ImportText:
       {
-        OldTimers = SaveTimers(&NrOldTimers);
+        int NrOldTimers = 0;
+        tTimerExt *OldTimers = SaveTimers(&NrOldTimers);
         ret = ImportSettings_Text(TxtFileName, TAPFSROOT LOGDIR, OverwriteSatellites, RestoreNameLock);
         if (OldTimers)
         {
@@ -338,7 +344,8 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
 
       case ST_ImportBinary:
       {
-        OldTimers = SaveTimers(&NrOldTimers);
+        int NrOldTimers = 0;
+        tTimerExt *OldTimers = SaveTimers(&NrOldTimers);
         ret = ImportSettings(DatFileName, TAPFSROOT LOGDIR, OverwriteSatellites, RestoreNameLock);
         if (OldTimers)
         {
@@ -367,11 +374,11 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
       {
         WriteLogMC(PROGRAM_NAME, "[Action] Exporting settings...");
         ret = TRUE;
-        if (!StartParameter || ImportFormat == 0)
+        if (!HasStartParams || ImportFormat == 0)
           ret = ExportSettings(DatFileName,      TAPFSROOT LOGDIR) && ret;
-        if (!StartParameter || ImportFormat == 1)
+        if (!HasStartParams || ImportFormat == 1)
           ret = ExportSettings_Text(TxtFileName, TAPFSROOT LOGDIR) && ret;
-        if (!StartParameter || ImportFormat == 2)
+        if (!HasStartParams || ImportFormat == 2)
           ret =(HDD_ImExportChData(StdFileName,  TAPFSROOT LOGDIR, FALSE) || ((void*)FIS_fwAppl_ExportChData() == NULL)) && ret;
         if (!ret && !SilentMode)
           pMessage = LangGetString(LS_ExportError);
@@ -389,9 +396,6 @@ dword TAP_EventHandler(word event, dword param1, dword param2)
 
       case ST_Finished:
       {
-        if (StartParameter)
-          StartParameter->ResultCode = ret;
-
 //        if (SysSubState != 0)
 //          TAP_EnterNormalNoInfo();
 
