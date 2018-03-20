@@ -318,7 +318,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
 
     // Write the file header
     ret = (fprintf(fExportFile, "[ChannelListSaver]" CRLF)               > 0) && ret;
-    ret = (fprintf(fExportFile, "FileVersion=%d" CRLF,  2)               > 0) && ret;
+    ret = (fprintf(fExportFile, "FileVersion=%d" CRLF,  3)               > 0) && ret;
     FileSizePos = ftell(fExportFile);
     ret = (fprintf(fExportFile, "FileSize=%010d" CRLF,  0)               > 0) && ret;
     ret = (fprintf(fExportFile, "NrOfLines=%010d" CRLF, 0)               > 0) && ret;
@@ -341,17 +341,17 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
     z = 13;
 
     //[Satellites]
-    //#  ;                 ;       ;      ;    Supply;;      DiSEqC10;;    DiSEqC11;;    DiSeqC12;;    DiSEqC12Flags;;      Universal;;    Switch22;;     LowBand;;        HBFrq;;        Loop;;       Unused1;;     Unused2;;     Unused3;;     Unused4;;                   Unused5;;                ;                                                                   ;
-    //#Nr; SatName         ; SatPos; NrTps;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;      LNB1; LNB2;       LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;             LNB1;           LNB2;   Unused1;  Unknown1                                                         ;  Unused2
-    //  1; Astra           ;    192;   136;     y;    y;      0;    0;      0;    0;      4;    4;   FE 7F 7F; FE 7F 7F;      y;     y;      n;     n;   9750;  9750;  10600; 10600;     y;    y;       0;    0;      0;    0;      0;    0;      0;    0;   FE 40 43 FF FF; FE 40 43 FF FF;    0xffff;  FF FF FF FF 01 01 00 01 00 00 00 00 B2 2E 02 04 6E 00 78 00 6E 00;  FF FF FF FF FF FF FF FF
+    //#  ;                 ;       ;      ;    Supply;;      DiSEqC10;;    DiSEqC11;;    DiSeqC12;;    DiSEqC12Flags;;      Universal;;    Switch22;;     LowBand;;        HBFrq;;        Loop;;     UniSatPos;;   UniUnused;;   UniUsrBand;;    UniFreq;;     Unused1;;     Unused2;;     Unused3;;     Unused4;;       Unused6;;             ;                                                                   ;
+    //#Nr; SatName         ; SatPos; NrTps;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;      LNB1; LNB2;       LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;    LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;     LNB1;   LNB2;   unused1;  unknown1                                                         ;  unused2
+    //  1; Astra           ;    192;   136;     y;    y;      0;    0;      0;    0;      4;    4;   FE 7F 7F; FE 7F 7F;      y;     y;      n;     n;   9750;  9750;  10600; 10600;     y;    y;       0;    0;      0;    0;      0;    0;       0;    0;      0;    0;      0;    0;      0;    0;      0;    0;    FF FF;  FF FF;    0xffff;  FF FF FF FF 01 01 00 01 00 00 00 00 B2 2E 02 04 6E 00 78 00 6E 00;  FF FF FF FF FF FF FF FF
     {
       tFlashSatTable         CurSat;
       char                   StringBuf1[100], StringBuf2[100];
 
       ret = (fprintf(fExportFile, "[Satellites]" CRLF)                   > 0) && ret;
 //      ret = (fprintf(fExportFile, "#Nr; SatName;          SatPos; NrTps; LNB1Supply; LNB1DiSEqC10; LNB1DiSEqC11; LNB1DiSeqC12; LNB1DiSEqC12Flags; LNB1Universal; LNB1Switch22; LNB1LowBand; LNB1HBFrq; LNB1Loop; LNB1Unused1; LNB1Unused2; LNB1Unused3; LNB1Unused4; LNB1Unused5; LNB2Supply; LNB2DiSEqC10; LNB2DiSEqC11; LNB2DiSeqC12; LNB2DiSEqC12Flags; LNB2Universal; LNB2Switch22; LNB2LowBand; LNB2HBFrq; LNB2Loop; LNB2Unused1; LNB2Unused2; LNB2Unused3; LNB2Unused4; LNB2Unused5; Unused1; Unknown1; Unused2" CRLF) > 0) && ret;
-      ret = (fprintf(fExportFile, "#  ;                 ;       ;      ;    Supply;;      DiSEqC10;;    DiSEqC11;;    DiSeqC12;;    DiSEqC12Flags;;      Universal;;    Switch22;;     LowBand;;        HBFrq;;    LoopThrough;;   Unused1;;     Unused2;;     Unused3;;     Unused4;;                    Unused5;;                ;                                                                   ;" CRLF) > 0) && ret;
-      ret = (fprintf(fExportFile, "#Nr; SatName         ; SatPos; NrTps;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;      LNB1; LNB2;       LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;             LNB1;           LNB2;   Unused1;  Unknown1                                                         ;  Unused2" CRLF) > 0) && ret;
+      ret = (fprintf(fExportFile, "#  ;                 ;       ;      ;    Supply;;      DiSEqC10;;    DiSEqC11;;    DiSeqC12;;    DiSEqC12Flags;;      Universal;;    Switch22;;     LowBand;;        HBFrq;;        Loop;;     UniSatPos;;   UniUnused;;   UniUsrBand;;    UniFreq;;     Unused1;;     Unused2;;     Unused3;;     Unused4;;       Unused6;;             ;                                                                   ;" CRLF) > 0) && ret;
+      ret = (fprintf(fExportFile, "#Nr; SatName         ; SatPos; NrTps;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;      LNB1; LNB2;       LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;    LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;     LNB1;   LNB2;   unused1;  unknown1                                                         ;  unused2" CRLF) > 0) && ret;
       z += 3;
 
       for(i = 0; i < FileHeader.NrSatellites; i++)
@@ -370,19 +370,19 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
                                          CurSat.LNB[j].LNBSupply, CurSat.LNB[j].DiSEqC10, CurSat.LNB[j].DiSEqC11, CurSat.LNB[j].DiSEqC12, StringBuf1, CurSat.LNB[j].UniversalLNB, CurSat.LNB[j].Switch22, CurSat.LNB[j].LowBand, CurSat.LNB[j].HBFrq, CurSat.LNB[j].LoopThrough, CurSat.LNB[j].unused1, CurSat.LNB[j].unused2, CurSat.LNB[j].unused3, CurSat.LNB[j].unused4, StringBuf2) > 0) && ret;
           } */
 
-          // LNBxSupply; LNBxDiSEqC10; LNBxDiSEqC11; LNBxDiSeqC12; LNBxDiSEqC12Flags; LNBxUniversal; LNBxSwitch22; LNBxLowBand; LNBxHBFrq; LNBxLoop
+          // LNBxSupply; LNBxDiSEqC10; LNBxDiSEqC11; LNBxDiSeqC12; LNBxDiSEqC12Flags; LNBxUniversal; LNBxSwitch22; LNBxLowBand; LNBxHBFrq; LNBxLoop; UniSatPos; UniUnused; UniUsrBand; UniFreq;
           ByteArrToStr(StringBuf1, CurSat.LNB[0].DiSEqC12Flags, sizeof(CurSat.LNB[0].DiSEqC12Flags));
           ByteArrToStr(StringBuf2, CurSat.LNB[1].DiSEqC12Flags, sizeof(CurSat.LNB[1].DiSEqC12Flags));
-          ret = (fprintf(fExportFile, "%3c;  %3c;    %3hhu;  %3hhu;    %3hhu;  %3hhu;    %3hhu;  %3hhu;   %s; %s;  %5c; %5c;  %5c; %5c;  %5hu; %5hu;  %5hu; %5hu;   %3c;  %3c;    ",
-                                       BoolToChar(CurSat.LNB[0].LNBSupply), BoolToChar(CurSat.LNB[1].LNBSupply),  CurSat.LNB[0].DiSEqC10, CurSat.LNB[1].DiSEqC10,  CurSat.LNB[0].DiSEqC11, CurSat.LNB[1].DiSEqC11,  CurSat.LNB[0].DiSEqC12, CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  BoolToChar(CurSat.LNB[0].UniversalLNB), BoolToChar(CurSat.LNB[1].UniversalLNB),  BoolToChar(CurSat.LNB[0].Switch22), BoolToChar(CurSat.LNB[1].Switch22),  CurSat.LNB[0].LowBand, CurSat.LNB[1].LowBand,  CurSat.LNB[0].HBFrq, CurSat.LNB[1].HBFrq,  BoolToChar(CurSat.LNB[0].LoopThrough), BoolToChar(CurSat.LNB[1].LoopThrough)) > 0) && ret;
+          ret = (fprintf(fExportFile, "%3c;  %3c;    %3hhu;  %3hhu;    %3hhu;  %3hhu;    %3hhu;  %3hhu;   %s; %s;  %5c; %5c;  %5c; %5c;  %5hu; %5hu;  %5hu; %5hu;   %3c;  %3c;       %1hhu;    %1hhu;   %#4hhx; %#4hhx;      %1hu;    %1hu;    %4hu; %4hu;   ",
+                                       BoolToChar(CurSat.LNB[0].LNBSupply), BoolToChar(CurSat.LNB[1].LNBSupply),  CurSat.LNB[0].DiSEqC10, CurSat.LNB[1].DiSEqC10,  CurSat.LNB[0].DiSEqC11, CurSat.LNB[1].DiSEqC11,  CurSat.LNB[0].DiSEqC12, CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  BoolToChar(CurSat.LNB[0].UniversalLNB), BoolToChar(CurSat.LNB[1].UniversalLNB),  BoolToChar(CurSat.LNB[0].Switch22), BoolToChar(CurSat.LNB[1].Switch22),  CurSat.LNB[0].LowBand, CurSat.LNB[1].LowBand,  CurSat.LNB[0].HBFrq, CurSat.LNB[1].HBFrq,  BoolToChar(CurSat.LNB[0].LoopThrough), BoolToChar(CurSat.LNB[1].LoopThrough),  CurSat.LNB[0].UniCableSatPosition, CurSat.LNB[1].UniCableSatPosition,  CurSat.LNB[0].UniCableunused, CurSat.LNB[1].UniCableunused,  CurSat.LNB[0].UniCableUserBand, CurSat.LNB[1].UniCableUserBand,  CurSat.LNB[0].UniCableFrq, CurSat.LNB[1].UniCableFrq) > 0) && ret;
 
           // LNBxUnused1; LNBxUnused2; LNBxUnused3; LNBxUnused4; LNBxUnused5;
-          ByteArrToStr(StringBuf1, CurSat.LNB[0].unused5, sizeof(CurSat.LNB[0].unused5));
-          ByteArrToStr(StringBuf2, CurSat.LNB[1].unused5, sizeof(CurSat.LNB[1].unused5));
-          ret = (fprintf(fExportFile, "%#4hhx; %#4hhx;   %#4hhx; %#4hhx;   %#4hhx; %#4hhx;   %#4hhx; %#4hhx;   %s; %s;    ",
+          ByteArrToStr(StringBuf1, CurSat.LNB[0].unused6, sizeof(CurSat.LNB[0].unused6));
+          ByteArrToStr(StringBuf2, CurSat.LNB[1].unused6, sizeof(CurSat.LNB[1].unused6));
+          ret = (fprintf(fExportFile, "%#4hhx; %#4hhx;   %#4hhx; %#4hhx;   %#4hhx; %#4hhx;   %#4hhx; %#4hhx;    %s;  %s;    ",
                                        CurSat.LNB[0].unused1, CurSat.LNB[1].unused1,  CurSat.LNB[0].unused2, CurSat.LNB[1].unused2,  CurSat.LNB[0].unused3, CurSat.LNB[1].unused3,  CurSat.LNB[0].unused4, CurSat.LNB[1].unused4,  StringBuf1, StringBuf2) > 0) && ret;
 
-          // Unused1; Unknown1; Unused2
+          // unused1; unknown1; unused2
           ByteArrToStr(StringBuf1, CurSat.unknown1, sizeof(CurSat.unknown1));
           ByteArrToStr(StringBuf2, CurSat.unused2, sizeof(CurSat.unused2));
           ret = (fprintf(fExportFile, "%#6hx;  %s;  %s" CRLF,
@@ -658,7 +658,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           if (strcmp(Name, "FileVersion") == 0)
           {
             FileHeader.FileVersion = Value;
-            if (Value <= 2)
+            if (Value <= 3)
               HeaderCheck[0] = TRUE;
             else
               WriteLogMCf(PROGRAM_NAME, "  Incorrect file version %lu.", Value);
@@ -709,16 +709,16 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
       switch (CurMode)
       {
         //[Satellites]
-        //#  ;                 ;       ;      ;    Supply;;      DiSEqC10;;    DiSEqC11;;    DiSeqC12;;    DiSEqC12Flags;;      Universal;;    Switch22;;     LowBand;;        HBFrq;;        Loop;;       Unused1;;     Unused2;;     Unused3;;     Unused4;;                   Unused5;;                ;                                                                   ;
-        //#Nr; SatName         ; SatPos; NrTps;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;      LNB1; LNB2;       LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;             LNB1;           LNB2;   Unused1;  Unknown1                                                         ;  Unused2
-        //  1; Astra           ;    192;   136;     y;    y;      0;    0;      0;    0;      4;    4;   FE 7F 7F; FE 7F 7F;      y;     y;      n;     n;   9750;  9750;  10600; 10600;     y;    y;       0;    0;      0;    0;      0;    0;      0;    0;   FE 40 43 FF FF; FE 40 43 FF FF;    0xffff;  FF FF FF FF 01 01 00 01 00 00 00 00 B2 2E 02 04 6E 00 78 00 6E 00;  FF FF FF FF FF FF FF FF
+        //#  ;                 ;       ;      ;    Supply;;      DiSEqC10;;    DiSEqC11;;    DiSeqC12;;    DiSEqC12Flags;;      Universal;;    Switch22;;     LowBand;;        HBFrq;;        Loop;;     UniSatPos;;   UniUnused;;   UniUsrBand;;    UniFreq;;     Unused1;;     Unused2;;     Unused3;;     Unused4;;       Unused6;;             ;                                                                   ;
+        //#Nr; SatName         ; SatPos; NrTps;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;      LNB1; LNB2;       LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1;  LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;    LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;   LNB1; LNB2;     LNB1;   LNB2;   unused1;  unknown1                                                         ;  unused2
+        //  1; Astra           ;    192;   136;     y;    y;      0;    0;      0;    0;      4;    4;   FE 7F 7F; FE 7F 7F;      y;     y;      n;     n;   9750;  9750;  10600; 10600;     y;    y;       0;    0;      0;    0;      0;    0;       0;    0;      0;    0;      0;    0;      0;    0;      0;    0;    FF FF;  FF FF;    0xffff;  FF FF FF FF 01 01 00 01 00 00 00 00 B2 2E 02 04 6E 00 78 00 6E 00;  FF FF FF FF FF FF FF FF
         case SM_Satellites:
         {
           tFlashSatTable         CurSat;
           char                   StringBuf1[100], StringBuf2[100];
           char                   LNBSupply[2], UniversalLNB[2], Switch22[2], LoopThrough[2];
-          byte                   DiSEqC10[2], unused1[2], unused2[2], unused3[2], unused4[2];
-          word                   LowBand[2];
+          byte                   DiSEqC10[2], UniSatPos[2], UniUnused[2],  unused1[2], unused2[2], unused3[2], unused4[2];
+          word                   LowBand[2], UniUsrBand[2], UniFreq[2];
           int                    BytesRead = 0;
 
           memset(&CurSat, 0, sizeof(tFlashSatTable));
@@ -732,10 +732,15 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           BytesRead = 0;
           StringBuf1[0] = '\0'; StringBuf2[0] = '\0';
 
-          // LNBxSupply; LNBxDiSEqC10; LNBxDiSEqC11; LNBxDiSeqC12; LNBxDiSEqC12Flags; LNBxUniversal; LNBxSwitch22; LNBxLowBand; LNBxHBFrq; LNBxLoop
-          ret = (sscanf(&Buffer[p], "%c ; %c ;  %hhu ; %hhu ;  %hhu ; %hhu ;  %hhu ; %hhu ;  %9[^;\r\n] ; %9[^;\r\n] ;  %c ; %c ;  %c ; %c ;  %hu ; %hu ;  %hu ; %hu ;  %c ; %c ; %n",
-                                      &LNBSupply[0], &LNBSupply[1],  &DiSEqC10[0], &DiSEqC10[1],  &CurSat.LNB[0].DiSEqC11, &CurSat.LNB[1].DiSEqC11,  &CurSat.LNB[0].DiSEqC12, &CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  &UniversalLNB[0], &UniversalLNB[1],  &Switch22[0], &Switch22[1],  &LowBand[0], &LowBand[1],  &CurSat.LNB[0].HBFrq, &CurSat.LNB[1].HBFrq,  &LoopThrough[0], &LoopThrough[1], &BytesRead) == 20) && ret;
+          // LNBxSupply; LNBxDiSEqC10; LNBxDiSEqC11; LNBxDiSeqC12; LNBxDiSEqC12Flags; LNBxUniversal; LNBxSwitch22; LNBxLowBand; LNBxHBFrq; LNBxLoop; UniSatPos; UniUnused; UniUsrBand; UniFreq;
+          if (FileHeader.FileVersion <= 2)
+            ret = (sscanf(&Buffer[p], "%c ; %c ;  %hhu ; %hhu ;  %hhu ; %hhu ;  %hhu ; %hhu ;  %9[^;\r\n] ; %9[^;\r\n] ;  %c ; %c ;  %c ; %c ;  %hu ; %hu ;  %hu ; %hu ;  %c ; %c ; %n",
+                                        &LNBSupply[0], &LNBSupply[1],  &DiSEqC10[0], &DiSEqC10[1],  &CurSat.LNB[0].DiSEqC11, &CurSat.LNB[1].DiSEqC11,  &CurSat.LNB[0].DiSEqC12, &CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  &UniversalLNB[0], &UniversalLNB[1],  &Switch22[0], &Switch22[1],  &LowBand[0], &LowBand[1],  &CurSat.LNB[0].HBFrq, &CurSat.LNB[1].HBFrq,  &LoopThrough[0], &LoopThrough[1],  &BytesRead) == 20) && ret;
+          else
+            ret = (sscanf(&Buffer[p], "%c ; %c ;  %hhu ; %hhu ;  %hhu ; %hhu ;  %hhu ; %hhu ;  %9[^;\r\n] ; %9[^;\r\n] ;  %c ; %c ;  %c ; %c ;  %hu ; %hu ;  %hu ; %hu ;  %c ; %c ;  %hhu ; %hhu ;  %hhi ; %hhi ;  %hu ; %hu ;  %hu ; %hu ;  %n",
+                                        &LNBSupply[0], &LNBSupply[1],  &DiSEqC10[0], &DiSEqC10[1],  &CurSat.LNB[0].DiSEqC11, &CurSat.LNB[1].DiSEqC11,  &CurSat.LNB[0].DiSEqC12, &CurSat.LNB[1].DiSEqC12,  StringBuf1, StringBuf2,  &UniversalLNB[0], &UniversalLNB[1],  &Switch22[0], &Switch22[1],  &LowBand[0], &LowBand[1],  &CurSat.LNB[0].HBFrq, &CurSat.LNB[1].HBFrq,  &LoopThrough[0], &LoopThrough[1],  &UniSatPos[0], &UniSatPos[1],  &UniUnused[0], &UniUnused[1],  &UniUsrBand[0], &UniUsrBand[1],  &UniFreq[0], &UniFreq[1],  &BytesRead) == 28) && ret;
           p += BytesRead;
+
           ret = StrToByteArr(CurSat.LNB[0].DiSEqC12Flags, StringBuf1, sizeof(CurSat.LNB[0].DiSEqC12Flags)) && ret;
           ret = StrToByteArr(CurSat.LNB[1].DiSEqC12Flags, StringBuf2, sizeof(CurSat.LNB[1].DiSEqC12Flags)) && ret;
           BytesRead = 0;
@@ -745,8 +750,16 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           ret = (sscanf(&Buffer[p], "%hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %hhi ; %hhi ;  %15[^;\r\n] ; %15[^;\r\n] ; %n",
                                       &unused1[0], &unused1[1],  &unused2[0], &unused2[1],  &unused3[0], &unused3[1],  &unused4[0], &unused4[1],  StringBuf1, StringBuf2, &BytesRead) == 10) && ret;
           p += BytesRead;
-          ret = StrToByteArr(CurSat.LNB[0].unused5, StringBuf1, sizeof(CurSat.LNB[0].unused5)) && ret;
-          ret = StrToByteArr(CurSat.LNB[1].unused5, StringBuf2, sizeof(CurSat.LNB[1].unused5)) && ret;
+          if (FileHeader.FileVersion <= 2)
+          {
+            ret = StrToByteArr(CurSat.LNB[0].unused5, StringBuf1, sizeof(CurSat.LNB[0].unused5)) && ret;
+            ret = StrToByteArr(CurSat.LNB[1].unused5, StringBuf2, sizeof(CurSat.LNB[1].unused5)) && ret;
+          }
+          else
+          {
+            ret = StrToByteArr(CurSat.LNB[0].unused6, StringBuf1, sizeof(CurSat.LNB[0].unused6)) && ret;
+            ret = StrToByteArr(CurSat.LNB[1].unused6, StringBuf2, sizeof(CurSat.LNB[1].unused6)) && ret;
+          }
           StringBuf1[0] = '\0'; StringBuf2[0] = '\0';
 
           int i;
@@ -758,6 +771,10 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
             CurSat.LNB[i].LoopThrough  = CharToBool(LoopThrough[i]);
             CurSat.LNB[i].LowBand      = LowBand[i];
             CurSat.LNB[i].DiSEqC10     = DiSEqC10[i];
+            CurSat.LNB[i].UniCableSatPosition = UniSatPos[i];
+            CurSat.LNB[i].UniCableunused      = UniUnused[i];
+            CurSat.LNB[i].UniCableUserBand    = UniUsrBand[i];
+            CurSat.LNB[i].UniCableFrq         = UniFreq[i];
             CurSat.LNB[i].unused1      = unused1[i];
             CurSat.LNB[i].unused2      = unused2[i];
             CurSat.LNB[i].unused3      = unused3[i];

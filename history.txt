@@ -1,8 +1,19 @@
+v1.0 RC2      NEU:
+(2018-03-21)   ** Unicable-Einstellungen in der Sat-Liste werden decodiert
+                  (-> neues Datenformat v3 für die Channels.txt!!)
+                * Beim Import von Fremd-Daten in einen TMS2100 wird die Pilot-Einstellung angepasst
+                  (für alle 8PSK-Transponder wird Pilot=on gesetzt, falls im Header "PilotData=0" steht)
+              BUGFIXES:
+                - spezielle Konstellation (CLS in Slot 0, wenn gleichzeitig andere TAPs aktiv)
+                  verhinderte das korrekte Beenden von CLS, und führte zu Crashes (vgl. v0.8 "TSR-Bug")
+              INTERNALS:
+                - Umstellung des Codes auf eine StateMachine
+
 v0.9          NEU:
-(2018-02-01)    * ChannelListSaver erhält die eingestellten Timer und passt sie an die neue Senderliste an
-                * AudioPID in der Channels.txt wird korrekt ausgegeben (von Flags separiert)
+(2018-02-01)   ** AudioPID in der Channels.txt wird korrekt ausgegeben (von Flags separiert)
                   (-> neues Datenformat v2 für die Channels.txt!!)
                   (die neue Version kann das alte und neue Format importieren)
+                * ChannelListSaver erhält die eingestellten Timer und passt sie an die neue Senderliste an
               INTERNALS:
                 - Umstellung auf eigene Load/SaveINI und LoadLangStrings
 
