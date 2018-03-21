@@ -722,13 +722,15 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           int                    BytesRead = 0;
 
           memset(&CurSat, 0, sizeof(tFlashSatTable));
+          StringBuf1[0] = '\0';
           p = 0;
 
           // Nr; SatName; SatPosition; NrTransponders;
           ret = (sscanf(Buffer, "%*i ; %15[^;\r\n] ; %hu ; %hu ; %n",
-                                  CurSat.SatName, &CurSat.SatPosition, &CurSat.NrOfTransponders, &BytesRead) == 3) && ret;
+                                  StringBuf1, &CurSat.SatPosition, &CurSat.NrOfTransponders, &BytesRead) == 3) && ret;
           p += BytesRead;
-          RTrim(CurSat.SatName);
+          RTrim(StringBuf1);
+          strncpy(CurSat.SatName, StringBuf1, sizeof(CurSat.SatName)-1);
           BytesRead = 0;
           StringBuf1[0] = '\0'; StringBuf2[0] = '\0';
 
