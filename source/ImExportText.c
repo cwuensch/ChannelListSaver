@@ -324,7 +324,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
     ret = (fprintf(fExportFile, "NrOfLines=%010d" CRLF, 0)               > 0) && ret;
     ret = (fprintf(fExportFile, "SystemType=%d" CRLF,   GetSystemType()) > 0) && ret;
     ret = (fprintf(fExportFile, "UTF8System=%d" CRLF,   isUTFToppy())    > 0) && ret;
-    ret = (fprintf(fExportFile, "PilotData=%d" CRLF, (GetSysID()==22010)) > 0) && ret;
+    ret = (fprintf(fExportFile, "PilotData=%d" CRLF, (TAP_GetSystemId()==22010)) > 0) && ret;
 
     memset(&FileHeader, 0, sizeof(FileHeader));
     FileHeader.NrSatellites = FlashSatTablesGetTotal();
@@ -544,7 +544,7 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
   FILE                 *fImportFile = NULL;
   char                  AbsFileName[FBLIB_DIR_SIZE];
   unsigned long         fs;
-  const word            CurSystemID = GetSysID();
+  const word            CurSystemID = TAP_GetSystemId();
   tScanMode             CurMode = SM_Start;
   bool                  HeaderCheck[3];
   int                   NrOfLines = 0;

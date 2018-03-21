@@ -133,7 +133,7 @@ int TAP_Main(void)
   CreateRootDir();
   WriteLogMC (PROGRAM_NAME, "***  ChannelListSaver " VERSION " started! (FBLib " __FBLIB_VERSION__ ") ***");
   WriteLogMC (PROGRAM_NAME, "=======================================================");
-  WriteLogMCf(PROGRAM_NAME, "Receiver Model: %s (%u), System Type: TMS-%c (%d)", GetToppyString(GetSysID()), GetSysID(), SysTypeToStr(), GetSystemType());
+  WriteLogMCf(PROGRAM_NAME, "Receiver Model: %s (%lu), System Type: TMS-%c (%d)", GetToppyString(TAP_GetSystemId()), TAP_GetSystemId(), SysTypeToStr(), GetSystemType());
   WriteLogMCf(PROGRAM_NAME, "Firmware: %s", GetApplVer());
 
   // Load Language Strings

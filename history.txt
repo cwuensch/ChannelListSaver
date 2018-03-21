@@ -1,4 +1,4 @@
-v1.0 RC2      NEU:
+v1.0          NEU:
 (2018-03-21)   ** Unicable-Einstellungen in der Sat-Liste werden decodiert
                   (-> neues Datenformat v3 für die Channels.txt!!)
                 * Beim Import von Fremd-Daten in einen TMS2100 wird die Pilot-Einstellung angepasst
@@ -8,6 +8,7 @@ v1.0 RC2      NEU:
                   verhinderte das korrekte Beenden von CLS, und führte zu Crashes (vgl. v0.8 "TSR-Bug")
               INTERNALS:
                 - Umstellung des Codes auf eine StateMachine
+                - Code-Optimierung in FBLib
 
 v0.9          NEU:
 (2018-02-01)   ** AudioPID in der Channels.txt wird korrekt ausgegeben (von Flags separiert)

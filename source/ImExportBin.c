@@ -67,7 +67,7 @@ bool ExportSettings(char *FileName, char *AbsDirectory)
     FileHeader.FileVersion = 1;
     FileHeader.SystemType = GetSystemType();
     FileHeader.UTF8System = isUTFToppy();
-    FileHeader.PilotData = (GetSysID() == 22010);  // nur beim TMS2100
+    FileHeader.PilotData = (TAP_GetSystemId() == 22010);  // nur beim TMS2100
 
     // Now write the data blocks to the file
     ret = fwrite(&FileHeader, sizeof(tExportHeader), 1, fExportFile) && ret;
@@ -358,7 +358,7 @@ bool ImportSettings(char *FileName, char *AbsDirectory, int OverwriteSatellites,
               ret = FALSE;
 
             // Wenn Fremddatei auf TMS2100 eingespielt wird, dann Pilot-Settings überschreiben
-            if ((CurSystemType == ST_TMSS) && (GetSysID() == 22010) && !FileHeader.PilotData)
+            if ((CurSystemType == ST_TMSS) && (TAP_GetSystemId() == 22010) && !FileHeader.PilotData)
             {
               dword i;
               for (i = 0; i < *NrTransponders; i++)
