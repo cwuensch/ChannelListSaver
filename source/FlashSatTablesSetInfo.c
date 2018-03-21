@@ -3,11 +3,9 @@
 #include                "FlashSatTablesSetInfo.h"
 
 
-bool FlashSatTablesEncode_ST_TMSS(TYPE_SatInfo_TMSS *Data, tFlashSatTable *SatTable, bool ResetNrTransponders)
+static bool FlashSatTablesEncode_ST_TMSS(TYPE_SatInfo_TMSS *Data, tFlashSatTable *SatTable, bool ResetNrTransponders)
 {
   TRACEENTER();
-  word NrTransponders;
-  int i;
 
   if(!Data || !SatTable)
   {
@@ -15,10 +13,12 @@ bool FlashSatTablesEncode_ST_TMSS(TYPE_SatInfo_TMSS *Data, tFlashSatTable *SatTa
     return FALSE;
   }
 
-  NrTransponders = (ResetNrTransponders) ? 0 : Data->NrOfTransponders;
+  memcpy(Data, SatTable, sizeof(TYPE_SatInfo_TMSS));
+  if(ResetNrTransponders) Data->NrOfTransponders = 0;
 
+/*
   memset(Data, 0, sizeof(TYPE_SatInfo_TMSS));
-  Data->NrOfTransponders       = NrTransponders;
+  Data->NrOfTransponders       = (ResetNrTransponders) ? 0 : Data->NrOfTransponders;
   Data->unused1                = SatTable->unused1;
   Data->SatPosition            = SatTable->SatPosition;
   memcpy(Data->unknown1,         SatTable->unknown1, 22);
@@ -26,7 +26,10 @@ bool FlashSatTablesEncode_ST_TMSS(TYPE_SatInfo_TMSS *Data, tFlashSatTable *SatTa
   strncpy(Data->SatName,         SatTable->SatName, MAX_SatName - 1);
 
   //LNBs
-  for (i = 0; i <= 1; i++)
+  Data->LNB[0] = SatTable->LNB[0];
+  Data->LNB[1] = SatTable->LNB[1];
+
+/ *  for (i = 0; i <= 1; i++)
   {
     Data->LNB[i].LNBSupply     = SatTable->LNB[i].LNBSupply;
     Data->LNB[i].unused1       = SatTable->LNB[i].unused1;
@@ -42,14 +45,18 @@ bool FlashSatTablesEncode_ST_TMSS(TYPE_SatInfo_TMSS *Data, tFlashSatTable *SatTa
     Data->LNB[i].unused4       = SatTable->LNB[i].unused4;
     Data->LNB[i].DiSEqC11      = SatTable->LNB[i].DiSEqC11;
     memcpy(Data->LNB[i].DiSEqC12Flags, SatTable->LNB[i].DiSEqC12Flags, 3);
-    memcpy(Data->LNB[i].unused5,       SatTable->LNB[i].unused5, 5);
-  }
+    Data->LNB[i].UniCableSatPosition = SatTable->LNB[i].UniCableSatPosition;
+    Data->LNB[i].UniCableunused      = SatTable->LNB[i].UniCableunused;
+    Data->LNB[i].UniCableUserBand    = SatTable->LNB[i].UniCableUserBand;
+    Data->LNB[i].UniCableFrq         = SatTable->LNB[i].UniCableFrq;
+    memcpy(Data->LNB[i].unused6, SatTable->LNB[i].unused6, 2);
+  } */
 
   TRACEEXIT();
   return TRUE;
 }
 
-bool FlashSatTablesEncode_ST_TMST(TYPE_SatInfo_TMST *Data, tFlashSatTable *SatTable, bool ResetNrTransponders)
+static bool FlashSatTablesEncode_ST_TMST(TYPE_SatInfo_TMST *Data, tFlashSatTable *SatTable, bool ResetNrTransponders)
 {
   TRACEENTER();
 
@@ -68,7 +75,7 @@ bool FlashSatTablesEncode_ST_TMST(TYPE_SatInfo_TMST *Data, tFlashSatTable *SatTa
   return TRUE;
 }
 
-bool FlashSatTablesEncode_ST_TMSC(TYPE_SatInfo_TMSC *Data, tFlashSatTable *SatTable, bool ResetNrTransponders)
+static bool FlashSatTablesEncode_ST_TMSC(TYPE_SatInfo_TMSC *Data, tFlashSatTable *SatTable, bool ResetNrTransponders)
 {
   TRACEENTER();
 
@@ -86,7 +93,7 @@ bool FlashSatTablesEncode_ST_TMSC(TYPE_SatInfo_TMSC *Data, tFlashSatTable *SatTa
 }
 
 
-bool FlashSatTablesEncode(void *Data, tFlashSatTable *SatTable, bool ResetNrTransponders)
+static bool FlashSatTablesEncode(void *Data, tFlashSatTable *SatTable, bool ResetNrTransponders)
 {
   bool ret;
 
