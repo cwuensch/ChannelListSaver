@@ -971,7 +971,7 @@ int GetLengthOfProvNames(int *NrProviderNames)
 word* GetSETimerID(int TimerNr)
 {
   byte                 *p;
-  TYPE_Timer_TMSC      *t;
+  TYPE_Timer_generic   *t;
   word                 *ret = NULL;
   TRACEENTER();
 
@@ -979,7 +979,7 @@ word* GetSETimerID(int TimerNr)
   if(p)
   {
     p += (TimerNr * FlashTimerStructSize());
-    t  = (TYPE_Timer_TMSC*) p;
+    t  = (TYPE_Timer_generic*) p;
     ret = &(t->unused5);
   }
   TRACEEXIT();
