@@ -7,7 +7,7 @@ v1.0          NEU:
                 - spezielle Konstellation (CLS in Slot 0, wenn gleichzeitig andere TAPs aktiv)
                   verhinderte das korrekte Beenden von CLS, und führte zu Crashes (vgl. v0.8 "TSR-Bug")
               INTERNALS:
-                - (Umstellung des Codes auf eine StateMachine - nur TSR)
+                - (Umstellung des Codes auf eine StateMachine - nur TSR-Version)
                 - Code-Optimierung in FBLib
 
 v0.9          NEU:

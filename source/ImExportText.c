@@ -464,7 +464,7 @@ bool ExportSettings_Text(char *FileName, char *AbsDirectory)
                                       "%8s;  %8s;  %5hu;  %5hu;  %5hu;  %5hu;  %5hu;  %3hhu;    %c; "              // VideoStreamType; AudioStreamType; ServiceID; PMTPID; PCRPID; VideoPID; AudioPID; AudioType; AudioAutoSelect;
                                       "%5hu;    %c;    %c;     %c;     %c;       %c; %#6hx;  %s;  %s" CRLF,        // LCN; FlagDelete; FlagCAS; FlagLock; FlagSkip; NameLock; Flags2; Unknown2; ProviderName
                                        i, CurService.ServiceName, CurService.SatIndex, CurService.TransponderIndex, CurService.Tuner,
-                                       VideoTypeToStr(CurService.VideoStreamType), AudioTypeToStr(CurService.AudioStreamType), CurService.ServiceID, CurService.PMTPID, CurService.PCRPID, CurService.VideoPID, CurService.AudioPID2, CurService.AudioTypeFlag, BoolToChar(CurService.AudAutoSelect),
+                                       VideoTypeToStr(CurService.VideoStreamType), AudioTypeToStr(CurService.AudioStreamType), CurService.ServiceID, CurService.PMTPID, CurService.PCRPID, CurService.VideoPID, CurService.AudioPID, CurService.AudioTypeFlag, BoolToChar(CurService.AudioAutoSelect),
                                        CurService.LCN, BoolToChar(CurService.FlagDelete), BoolToChar(CurService.FlagCAS), BoolToChar(CurService.FlagLock), BoolToChar(CurService.FlagSkip), BoolToChar(CurService.NameLock), CurService.Flags2, StringBuf, CurService.ProviderName) > 0) && ret;
           z++;
         }
@@ -754,6 +754,24 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           p += BytesRead;
           if (FileHeader.FileVersion <= 2)
           {
+/*            byte unused5_1[5], unused5_2[5];
+            tUnicableFlags* Unicable[2];
+            int i;
+
+            ret = StrToByteArr(unused5_1, StringBuf1, sizeof(unused5_1)) && ret;
+            ret = StrToByteArr(unused5_2, StringBuf1, sizeof(unused5_2)) && ret;
+            Unicable[0] = (tUnicableFlags*) &unused5_1;
+            Unicable[1] = (tUnicableFlags*) &unused5_2;
+            
+            for (i = 0; i <= 1; i++)
+            {
+              CurSat.LNB[i].UniCableSatPosition = Unicable[i]->UniCableSatPosition;
+              CurSat.LNB[i].UniCableunused      = Unicable[i]->UniCableunused;
+              CurSat.LNB[i].UniCableUserBand    = Unicable[i]->UniCableUserBand;
+              CurSat.LNB[i].UniCableFrq         = Unicable[i]->UniCableFrq;
+              CurSat.LNB[i].unused6[0]          = Unicable[i]->unused6[0];
+              CurSat.LNB[i].unused6[1]          = Unicable[i]->unused6[1];
+            }  */
             ret = StrToByteArr(CurSat.LNB[0].unused5, StringBuf1, sizeof(CurSat.LNB[0].unused5)) && ret;
             ret = StrToByteArr(CurSat.LNB[1].unused5, StringBuf2, sizeof(CurSat.LNB[1].unused5)) && ret;
           }
@@ -915,11 +933,18 @@ bool ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatell
           RTrim(CurService.ProviderName);
           CurService.VideoStreamType = StrToVideoType(StringBuf1);
           CurService.AudioStreamType = StrToAudioType(StringBuf2);
-          CurService.AudioPID = AudioPID;
           if (FileHeader.FileVersion > 1)
           {
+            CurService.AudioPID = AudioPID;
             CurService.AudioTypeFlag = AudType;       // 0=MPEG1/2, 1=AC3 (Dolby Digital), 2=AAC, 3=unknown
-            CurService.AudAutoSelect = CharToBool(CharAudAuto);
+            CurService.AudioAutoSelect = CharToBool(CharAudAuto);
+          }
+          else
+          {
+            tAudioPIDFlags *AudioPID2 = (tAudioPIDFlags*) &AudioPID;
+            CurService.AudioPID = AudioPID2->AudioPID;
+            CurService.AudioTypeFlag = AudioPID2->AudioTypeFlag;
+            CurService.AudioAutoSelect = AudioPID2->AudioAutoSelect;
           }
           CurService.FlagDelete = CharToBool(CharFlagDel);
           CurService.FlagCAS  = CharToBool(CharFlagCAS);

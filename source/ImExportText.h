@@ -18,8 +18,17 @@ typedef struct
 {
   word AudioPID:13;
   word AudioTypeFlag:2;
-  word AudAutoSelect:1;
+  word AudioAutoSelect:1;
 } tAudioPIDFlags;
+
+typedef struct
+{
+  byte                  UniCableSatPosition:1;
+  byte                  UniCableunused:7;
+  word                  UniCableUserBand:4;
+  word                  UniCableFrq:12;
+  byte                  unused6[2];
+} tUnicableFlags;
 
 bool          ExportSettings_Text(char *FileName, char *AbsDirectory);
 bool          ImportSettings_Text(char *FileName, char *AbsDirectory, int OverwriteSatellites, bool RestoreNameLock);  // 0: nie, 1: auto, 2: immer
