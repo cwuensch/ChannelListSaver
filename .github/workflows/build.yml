@@ -1,0 +1,60 @@
+name: Build for TMS
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  release:
+    types: [ created ]
+
+jobs:
+  build:
+    name: Build for Topfield TMS
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v2
+#      with:
+#        submodules: recursive
+
+    - name: Compile code in container
+      run: |
+        docker run --rm -v ${{ github.workspace }}:/tap --env FBLib="MergeIntoMC" cwuensch/tmsbuild:FBLib "cd /tap/source && make --makefile=Makedebug"
+        mv ${{ github.workspace }}/source/ChannelListSaver.tap ${{ github.workspace }}/source/ChannelListSaver_NoTSR.tap
+
+    - name: Compile TSR version
+      run: |
+        mv -f ${{ github.workspace }}/source/ChannelListSaver_TSR.c ${{ github.workspace }}/source/ChannelListSaver.c
+        docker run --rm -v ${{ github.workspace }}:/tap --env FBLib="MergeIntoMC" cwuensch/tmsbuild:FBLib "cd /tap/source && make --makefile=Makedebug"
+
+    - name: Prepare download archive
+      run: |
+        cd ${{ github.workspace }}
+        mkdir -p target/Settings/ChannelListSaver target/docs
+        cp source/ChannelListSaver_NoTSR.tap target/ChannelListSaver.tap
+        cp source/ChannelListSaver.tap target/ChannelListSaver_TSR.tap
+        cp ChannelListSaver.lng ChannelListSaver.ini target/Settings/ChannelListSaver/
+        cp history.txt Readme_de.txt Readme_en.txt target/docs/
+        wget https://github.com/cwuensch/FireBirdLib/raw/MergeIntoMC/FirmwareTMS.dat -P target/
+
+    - name: Copy build artefact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ChannelListSaver ${{ github.event.release.tag_name }}
+        path: ${{ github.workspace }}/target/
+
+    - name: Create zip archive
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        cd ${{ github.workspace }}/target
+        zip -9 -r ${{ github.workspace }}/ChannelListSaver_${{ github.event.release.tag_name }}.zip *
+
+    - name: Upload release binaries
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        files: ${{ github.workspace }}/ChannelListSaver_${{ github.event.release.tag_name }}.zip

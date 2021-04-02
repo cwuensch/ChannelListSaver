@@ -1,12 +1,12 @@
 APP1 = ChannelListSaver
-BASE = $(shell cd /tapapi/TMS; pwd)
-CUR_DIR = $(shell pwd)
-
-# include default settings
-include ${BASE}/include/tool.mk
 
 # output object directory
+CUR_DIR = $(shell pwd)
 SRC_DIR = ${CUR_DIR}
+
+# include default settings
+BASE = $(shell cd /tapapi/TMS; pwd)
+include ${BASE}/include/tool.mk
 
 TAP_FLAGS += -fPIC -fno-strict-aliasing
 
@@ -18,19 +18,19 @@ endif
 CFLAGS += -DLINUX -D_REENTRANT  -DFULLDEBUG  -MD  -W -Wall  -O2 -static -funsigned-char -ffunction-sections -fdata-sections -D_FORTIFY_SOURCE=1
 CPPFLAGS += -DLINUX  -DFULLDEBUG  -MD  -W -Wall  -O2 -static -funsigned-char -ffunction-sections -fdata-sections -D_FORTIFY_SOURCE=1
 
-INCLUDE_DIRS = ${BASE}/include /opt/crosstool/include/
+INCLUDE_DIRS = ${BASE}/include /opt/crosstool/include
 TAP_INCLUDE_DIRS = $(addprefix -I, $(INCLUDE_DIRS))
 TAP_FLAGS += $(TAP_INCLUDE_DIRS)
-TAP_LIBS = ${BASE}/tapinit.o ${BASE}/libtap.so -lFireBird -ldl -lc
+TAP_LIBS = ${BASE}/tapinit.o -L ${BASE} -ltap -L /opt/crosstool/lib -lFireBird -ldl -lpthread -lc
 
 all: $(APP1).tap clean
 
 $(APP1).tap: $(APP1).o ImExportBin.o ImExportText.o FlashSatTablesSetInfo.o
 	@echo "[Linking... $@]"
-	@$(LD) -shared --no-undefined --allow-shlib-undefined -O1 --gc-sections ImExportBin.o ImExportText.o FlashSatTablesSetInfo.o -o $@ $< $(TAP_LIBS)
+	@$(LD) -shared --no-undefined --allow-shlib-undefined -O1 --gc-sections -o $@ $^ $(TAP_LIBS)
 	@$(JB) $@
 
-%.o: %.c ${BASE}/include/libFireBird.h
+%.o: %.c
 	@echo "[Compiling... $@]"
 	@$(CC) $(CFLAGS) $(TAP_FLAGS) -c $< -o $@
 
